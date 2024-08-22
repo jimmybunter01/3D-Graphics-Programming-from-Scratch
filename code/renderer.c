@@ -1,10 +1,18 @@
 // Need to include this so that SDL does not interfer with the main function in this file.
 #define SDL_MAIN_HANDLED
 
+// TL;DR this is done because a variable for an array size suggests a variable length array (VLA) which is not supported by the MSVC compiler.
+// The value of the variable is only known as runtime rather than compile time.
+// Could do #define NO_POINTS(x) (x*x*x) to  
+#define NO_POINTS 729
+
 #include "display.h"
+#include "vector.h"
 #include <stdbool.h>
 #include <assert.h>
 
+vec3_t cube_points[NO_POINTS];
+vec2_t projected_points[NO_POINTS];
 bool is_running = false;
 
 void setup() {
@@ -20,6 +28,16 @@ void setup() {
         window_width,
         window_height
     );
+  
+    int point_count = 0;
+    for (float x=-1; x<=1; x+=0.25) {
+         for (float y=-1; y<=1; y+=0.25) {
+             for (float z=-1; z<=1; z+=0.25) {
+                 vec3_t new_point = {.x = x, .y = y, .z = z};
+                 cube_points[point_count++] = new_point;
+             }
+         }  
+    }
 }
 
 void process_input() {
@@ -40,14 +58,28 @@ void process_input() {
   
 }
 
+// Project a 3D vector in 2D.
+vec2_t naive_orthographic_projection(vec3_t point) {
+    vec2_t projected_point = {
+        .x = point.x,
+        .y = point.y
+    };
+    return projected_point;
+}
+
 void update() {
-    // TODO
+    for (int i=0; i < NO_POINTS; i++) {
+        vec3_t point = cube_points[i];
+        vec2_t projected_point = naive_orthographic_projection(point);
+        projected_points[i] = projected_point;
+    }
 }
 
 void render() {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
     SDL_RenderClear(renderer);
     //draw_grid(10);
+    draw_pixel(50, 50, 0xFFFF00FF);
     draw_rectangle(300, 200, 300, 150, 0xFFFF00FF);
     render_colour_buffer();
     clear_colour_buffer(0xFFFFFF00);
@@ -69,4 +101,3 @@ int main(void) {
   
   return 0;
 }
-
