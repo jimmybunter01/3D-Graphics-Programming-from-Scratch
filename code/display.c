@@ -1,4 +1,4 @@
-#include <display.h>
+#include "display.h"
 #include <stdio.h>
 
 SDL_Window* window = NULL;
@@ -101,9 +101,9 @@ void draw_rectangle(int x, int y, int width, int height, uint32_t colour) {
         rect_bottom = window_height;
     }
         
-    for(int h=y; h <= rect_bottom; h++) {
-        for (int w=x; w <= rect_side; w++) {
-            colour_buffer[(window_width * h) + w] = colour;      
+    for(int current_y=y; current_y <= rect_bottom; current_y++) {
+        for (int current_x=x; current_x <= rect_side; current_x++) {
+            draw_pixel(current_x, current_y, colour);      
         }
     }
 }

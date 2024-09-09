@@ -13,6 +13,9 @@
 
 vec3_t cube_points[NO_POINTS];
 vec2_t projected_points[NO_POINTS];
+vec3_t camera_position = {.x=0, .y=0, .z=-5};
+
+float fov_factor = 640; // Magic Number for now!
 bool is_running = false;
 
 void setup() {
@@ -61,8 +64,8 @@ void process_input() {
 // Project a 3D vector in 2D.
 vec2_t naive_orthographic_projection(vec3_t point) {
     vec2_t projected_point = {
-        .x = point.x,
-        .y = point.y
+        .x = (point.x * fov_factor) / point.z,
+        .y = (point.y * fov_factor) / point.z
     };
     return projected_point;
 }
@@ -70,19 +73,26 @@ vec2_t naive_orthographic_projection(vec3_t point) {
 void update() {
     for (int i=0; i < NO_POINTS; i++) {
         vec3_t point = cube_points[i];
+
+        // We need to do this so that the point are moved away from the camera.
+        point.z -= camera_position.z;
+        
         vec2_t projected_point = naive_orthographic_projection(point);
         projected_points[i] = projected_point;
     }
 }
 
 void render() {
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
-    SDL_RenderClear(renderer);
     //draw_grid(10);
-    draw_pixel(50, 50, 0xFFFF00FF);
-    draw_rectangle(300, 200, 300, 150, 0xFFFF00FF);
+    
+    //draw_pixel(50, 50, 0xFFFF00FF);
+    for (int i=0; i < NO_POINTS; i++) {
+        vec2_t projected_point = projected_points[i];
+        draw_rectangle(projected_point.x + (window_width / 2), projected_point.y + (window_height / 2), 4, 4, 0xFFFFFF00);
+    }
+    
     render_colour_buffer();
-    clear_colour_buffer(0xFFFFFF00);
+    clear_colour_buffer(0x00000000);    
     SDL_RenderPresent(renderer);
 }
 
