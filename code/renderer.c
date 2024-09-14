@@ -18,6 +18,8 @@ vec3_t cube_rotation = {.x=0, .y=0, .z=0};
 
 float fov_factor = 640; // Magic Number for now!
 bool is_running = false;
+int previous_frame_time = 0;
+
 
 void setup() {
     // Colour Buffer is a 1D representation od a 2D array.
@@ -72,6 +74,11 @@ vec2_t naive_orthographic_projection(vec3_t point) {
 }
 
 void update() {
+    // SDL Init causes SDL to start coutning how many seconds have passed.
+    // Execution is locked unti the correct amount of time has passed - should keep the FPS constant across all devices this code is executed on.
+    while (!SDL_TICKS_PASSED(SDL_GetTicks(), previous_frame_time + FRAME_TARGET_TIME));
+    previous_frame_time = SDL_GetTicks();
+
     cube_rotation.x += 0.01;
     cube_rotation.y += 0.01;
     cube_rotation.z += 0.01;
@@ -110,7 +117,7 @@ int main(void) {
   
   setup();
 
-  while(is_running) {
+  while (is_running) {
       process_input();
       update();
       render();
