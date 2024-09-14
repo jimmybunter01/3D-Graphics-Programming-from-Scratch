@@ -14,6 +14,7 @@
 vec3_t cube_points[NO_POINTS];
 vec2_t projected_points[NO_POINTS];
 vec3_t camera_position = {.x=0, .y=0, .z=-5};
+vec3_t cube_rotation = {.x=0, .y=0, .z=0};
 
 float fov_factor = 640; // Magic Number for now!
 bool is_running = false;
@@ -71,13 +72,21 @@ vec2_t naive_orthographic_projection(vec3_t point) {
 }
 
 void update() {
+    cube_rotation.x += 0.01;
+    cube_rotation.y += 0.01;
+    cube_rotation.z += 0.01;
+    
     for (int i=0; i < NO_POINTS; i++) {
         vec3_t point = cube_points[i];
 
-        // We need to do this so that the point are moved away from the camera.
-        point.z -= camera_position.z;
+        vec3_t transformed_point = vec3_rotate_x(point, cube_rotation.x);    
+        transformed_point = vec3_rotate_y(transformed_point, cube_rotation.y);
+        transformed_point = vec3_rotate_z(transformed_point, cube_rotation.z);
         
-        vec2_t projected_point = naive_orthographic_projection(point);
+        // Translate points away from the camera
+        transformed_point.z -= camera_position.z;
+        
+        vec2_t projected_point = naive_orthographic_projection(transformed_point);
         projected_points[i] = projected_point;
     }
 }
