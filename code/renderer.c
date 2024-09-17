@@ -76,8 +76,15 @@ vec2_t naive_orthographic_projection(vec3_t point) {
 void update() {
     // SDL Init causes SDL to start coutning how many seconds have passed.
     // Execution is locked unti the correct amount of time has passed - should keep the FPS constant across all devices this code is executed on.
-    while (!SDL_TICKS_PASSED(SDL_GetTicks(), previous_frame_time + FRAME_TARGET_TIME));
-    previous_frame_time = SDL_GetTicks();
+    // while (!SDL_TICKS_PASSED(SDL_GetTicks(), previous_frame_time + FRAME_TARGET_TIME));
+    // previous_frame_time = SDL_GetTicks();
+
+    // Proper way of makeing the execution wait until the appropriate amount of time has passed.
+    // Ensures that the OS is correctly interacted with instead of blocking everything with a while loop.
+    int time_to_wait = FRAME_TARGET_TIME - (SDL_GetTicks() - previous_frame_time);
+    if (time_to_wait > 0 && time_to_wait <= FRAME_TARGET_TIME) {
+        SDL_Delay(time_to_wait);
+    }
 
     cube_rotation.x += 0.01;
     cube_rotation.y += 0.01;
