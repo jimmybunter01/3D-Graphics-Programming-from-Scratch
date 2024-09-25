@@ -20,6 +20,7 @@ void my_draw_grid(int multiple);
 void draw_grid(int multiple);
 void draw_pixel(int x, int y, uint32_t colour); 
 void draw_rectangle(int x, int y, int width, int height, uint32_t colour);
+void draw_line(int x0, int x1, int y0, int y1, uint32_t colour);
 void render_colour_buffer(void);
 void clear_colour_buffer(uint32_t colour);
 void destroy_window(void);

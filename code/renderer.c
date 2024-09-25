@@ -10,7 +10,7 @@
 // TL;DR this is done because a variable for an array size suggests a variable length array (VLA) which is not supported by the MSVC compiler.
 // The value of the variable is only known as runtime rather than compile time.
 // Could do #define NO_POINTS(x) (x*x*x) to  
-#define NO_POINTS 729
+// #define NO_POINTS 729
 
 triangle_t triangles_to_render[N_MESH_FACES];
 vec3_t camera_position = {.x=0, .y=0, .z=-5};
@@ -19,7 +19,6 @@ vec3_t cube_rotation = {.x=0, .y=0, .z=0};
 float fov_factor = 640; // Magic Number for now!
 bool is_running = false;
 int previous_frame_time = 0;
-
 
 void setup() {
     // Colour Buffer is a 1D representation od a 2D array.
@@ -72,7 +71,6 @@ void update() {
     if (time_to_wait > 0 && time_to_wait <= FRAME_TARGET_TIME) {
         SDL_Delay(time_to_wait);
     }
-
     cube_rotation.x += 0.01;
     cube_rotation.y += 0.01;
     cube_rotation.z += 0.01;
@@ -90,10 +88,10 @@ void update() {
             vec3_t transformed_vertex = face_vertices[j];
             transformed_vertex = vec3_rotate_x(transformed_vertex, cube_rotation.x);
             transformed_vertex = vec3_rotate_y(transformed_vertex, cube_rotation.y); 
-            transformed_vertex = vec3_rotate_z(transformed_vertex, cube_rotation.x);    
+            transformed_vertex = vec3_rotate_z(transformed_vertex, cube_rotation.z);    
 
             transformed_vertex.z -= camera_position.z;
-            
+        
             vec2_t projected_vertex = naive_orthographic_projection(transformed_vertex);
             projected_vertex.x += (window_width / 2);
             projected_vertex.y += (window_height / 2);
@@ -106,16 +104,19 @@ void update() {
 }
 
 void render() {
-    //draw_grid(10);
+    uint32_t yellow = 0xFFFFFF00;
     
-    //draw_pixel(50, 50, 0xFFFF00FF);
     for (int i=0; i < N_MESH_FACES; i++) {
         triangle_t triangle = triangles_to_render[i];
-        draw_rectangle(triangle.points[0].x, triangle.points[0].y, 3, 3, 0xFFFFFF00);
-        draw_rectangle(triangle.points[1].x, triangle.points[1].y, 3, 3, 0xFFFFFF00);    
-        draw_rectangle(triangle.points[2].x, triangle.points[2].y, 3, 3, 0xFFFFFF00);    
+        draw_rectangle(triangle.points[0].x, triangle.points[0].y, 3, 3, yellow);
+        draw_rectangle(triangle.points[1].x, triangle.points[1].y, 3, 3, yellow);    
+        draw_rectangle(triangle.points[2].x, triangle.points[2].y, 3, 3, yellow);
+
+        draw_line(triangle.points[0].x, triangle.points[1].x, triangle.points[0].y, triangle.points[1].y, yellow);
+        draw_line(triangle.points[1].x, triangle.points[2].x, triangle.points[1].y, triangle.points[2].y, yellow);    
+        draw_line(triangle.points[2].x, triangle.points[0].x, triangle.points[2].y, triangle.points[0].y, yellow);   
     }
-    
+       
     render_colour_buffer();
     clear_colour_buffer(0x00000000);    
     SDL_RenderPresent(renderer);
@@ -123,16 +124,12 @@ void render() {
 
 int main(void) {
   is_running = initialise_window();
-  
   setup();
-
   while (is_running) {
       process_input();
       update();
       render();
   }
-
   destroy_window();
-  
   return 0;
 }
