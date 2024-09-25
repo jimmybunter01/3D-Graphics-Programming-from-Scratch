@@ -13,8 +13,6 @@
 #define NO_POINTS 729
 
 triangle_t triangles_to_render[N_MESH_FACES];
-// vec3_t cube_points[NO_POINTS];
-// vec2_t projected_points[NO_POINTS];
 vec3_t camera_position = {.x=0, .y=0, .z=-5};
 vec3_t cube_rotation = {.x=0, .y=0, .z=0};
 
@@ -36,18 +34,6 @@ void setup() {
         window_width,
         window_height
     );
-
-
-    // Draw a cube of points!
-    // int point_count = 0;
-    // for (float x=-1; x<=1; x+=0.25) {
-    //      for (float y=-1; y<=1; y+=0.25) {
-    //          for (float z=-1; z<=1; z+=0.25) {
-    //              vec3_t new_point = {.x = x, .y = y, .z = z};
-    //              cube_points[point_count++] = new_point;
-    //          }
-    //      }  
-    // }
 }
 
 void process_input() {
@@ -77,12 +63,7 @@ vec2_t naive_orthographic_projection(vec3_t point) {
     return projected_point;
 }
 
-void update() {
-    // SDL Init causes SDL to start coutning how many seconds have passed.
-    // Execution is locked unti the correct amount of time has passed - should keep the FPS constant across all devices this code is executed on.
-    // while (!SDL_TICKS_PASSED(SDL_GetTicks(), previous_frame_time + FRAME_TARGET_TIME));
-    // previous_frame_time = SDL_GetTicks();
-
+void update() {   
     // Proper way of makeing the execution wait until the appropriate amount of time has passed.
     // Ensures that the OS is correctly interacted with instead of blocking everything with a while loop.
     // Issue with this approach is that greater FPS == faster rotation rather than smoother!
@@ -122,23 +103,6 @@ void update() {
 
         triangles_to_render[i] = projected_triangle;
     }
-    
-    
-    /*    
-    for (int i=0; i < NO_POINTS; i++) {
-        vec3_t point = cube_points[i];
-
-        vec3_t transformed_point = vec3_rotate_x(point, cube_rotation.x);    
-        transformed_point = vec3_rotate_y(transformed_point, cube_rotation.y);
-        transformed_point = vec3_rotate_z(transformed_point, cube_rotation.z);
-        
-        // Translate points away from the camera
-        transformed_point.z -= camera_position.z;
-        
-        vec2_t projected_point = naive_orthographic_projection(transformed_point);
-        projected_points[i] = projected_point;
-    }
-    */
 }
 
 void render() {
