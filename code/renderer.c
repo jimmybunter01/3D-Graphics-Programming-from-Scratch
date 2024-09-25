@@ -1,18 +1,20 @@
 // Need to include this so that SDL does not interfer with the main function in this file.
 #define SDL_MAIN_HANDLED
 
+#include "display.h"
+#include "vector.h"
+#include "mesh.h"
+#include <stdbool.h>
+#include <assert.h>
+
 // TL;DR this is done because a variable for an array size suggests a variable length array (VLA) which is not supported by the MSVC compiler.
 // The value of the variable is only known as runtime rather than compile time.
 // Could do #define NO_POINTS(x) (x*x*x) to  
 #define NO_POINTS 729
 
-#include "display.h"
-#include "vector.h"
-#include <stdbool.h>
-#include <assert.h>
-
-vec3_t cube_points[NO_POINTS];
-vec2_t projected_points[NO_POINTS];
+triangle_t triangles_to_render[N_MESH_FACES];
+// vec3_t cube_points[NO_POINTS];
+// vec2_t projected_points[NO_POINTS];
 vec3_t camera_position = {.x=0, .y=0, .z=-5};
 vec3_t cube_rotation = {.x=0, .y=0, .z=0};
 
@@ -34,16 +36,18 @@ void setup() {
         window_width,
         window_height
     );
-  
-    int point_count = 0;
-    for (float x=-1; x<=1; x+=0.25) {
-         for (float y=-1; y<=1; y+=0.25) {
-             for (float z=-1; z<=1; z+=0.25) {
-                 vec3_t new_point = {.x = x, .y = y, .z = z};
-                 cube_points[point_count++] = new_point;
-             }
-         }  
-    }
+
+
+    // Draw a cube of points!
+    // int point_count = 0;
+    // for (float x=-1; x<=1; x+=0.25) {
+    //      for (float y=-1; y<=1; y+=0.25) {
+    //          for (float z=-1; z<=1; z+=0.25) {
+    //              vec3_t new_point = {.x = x, .y = y, .z = z};
+    //              cube_points[point_count++] = new_point;
+    //          }
+    //      }  
+    // }
 }
 
 void process_input() {
@@ -81,6 +85,8 @@ void update() {
 
     // Proper way of makeing the execution wait until the appropriate amount of time has passed.
     // Ensures that the OS is correctly interacted with instead of blocking everything with a while loop.
+    // Issue with this approach is that greater FPS == faster rotation rather than smoother!
+    // Think like how games ran during the 8/16bit era in the US vs UK.
     int time_to_wait = FRAME_TARGET_TIME - (SDL_GetTicks() - previous_frame_time);
     if (time_to_wait > 0 && time_to_wait <= FRAME_TARGET_TIME) {
         SDL_Delay(time_to_wait);
@@ -89,7 +95,36 @@ void update() {
     cube_rotation.x += 0.01;
     cube_rotation.y += 0.01;
     cube_rotation.z += 0.01;
+
+    for (int i=0; i < N_MESH_FACES; i++) {
+        face_t mesh_face = mesh_faces[i];
+
+        vec3_t face_vertices[3];
+        face_vertices[0] = mesh_vertices[mesh_face.a - 1];
+        face_vertices[1] = mesh_vertices[mesh_face.b - 1];
+        face_vertices[2] = mesh_vertices[mesh_face.c - 1];
+
+        triangle_t projected_triangle;
+        for (int j=0; j < 3; j++) {
+            vec3_t transformed_vertex = face_vertices[j];
+            transformed_vertex = vec3_rotate_x(transformed_vertex, cube_rotation.x);
+            transformed_vertex = vec3_rotate_y(transformed_vertex, cube_rotation.y); 
+            transformed_vertex = vec3_rotate_z(transformed_vertex, cube_rotation.x);    
+
+            transformed_vertex.z -= camera_position.z;
+            
+            vec2_t projected_vertex = naive_orthographic_projection(transformed_vertex);
+            projected_vertex.x += (window_width / 2);
+            projected_vertex.y += (window_height / 2);
+            
+            projected_triangle.points[j] = projected_vertex;
+        }
+
+        triangles_to_render[i] = projected_triangle;
+    }
     
+    
+    /*    
     for (int i=0; i < NO_POINTS; i++) {
         vec3_t point = cube_points[i];
 
@@ -103,15 +138,18 @@ void update() {
         vec2_t projected_point = naive_orthographic_projection(transformed_point);
         projected_points[i] = projected_point;
     }
+    */
 }
 
 void render() {
     //draw_grid(10);
     
     //draw_pixel(50, 50, 0xFFFF00FF);
-    for (int i=0; i < NO_POINTS; i++) {
-        vec2_t projected_point = projected_points[i];
-        draw_rectangle(projected_point.x + (window_width / 2), projected_point.y + (window_height / 2), 4, 4, 0xFFFFFF00);
+    for (int i=0; i < N_MESH_FACES; i++) {
+        triangle_t triangle = triangles_to_render[i];
+        draw_rectangle(triangle.points[0].x, triangle.points[0].y, 3, 3, 0xFFFFFF00);
+        draw_rectangle(triangle.points[1].x, triangle.points[1].y, 3, 3, 0xFFFFFF00);    
+        draw_rectangle(triangle.points[2].x, triangle.points[2].y, 3, 3, 0xFFFFFF00);    
     }
     
     render_colour_buffer();
