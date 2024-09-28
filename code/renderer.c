@@ -4,15 +4,14 @@
 #include "display.h"
 #include "vector.h"
 #include "mesh.h"
+#include "array.h"
 #include <stdbool.h>
 #include <assert.h>
+#include <stdio.h>
 
-// TL;DR this is done because a variable for an array size suggests a variable length array (VLA) which is not supported by the MSVC compiler.
-// The value of the variable is only known as runtime rather than compile time.
-// Could do #define NO_POINTS(x) (x*x*x) to  
-// #define NO_POINTS 729
+da_array(triangle_mesh, triangle_t);
+triangle_mesh triangles_to_render = {};
 
-triangle_t triangles_to_render[N_MESH_FACES];
 vec3_t camera_position = {.x=0, .y=0, .z=-5};
 vec3_t cube_rotation = {.x=0, .y=0, .z=0};
 
@@ -98,27 +97,26 @@ void update() {
             
             projected_triangle.points[j] = projected_vertex;
         }
-
-        triangles_to_render[i] = projected_triangle;
+        
+        da_append(&triangles_to_render, projected_triangle);
     }
 }
 
 void render() {
     uint32_t yellow = 0xFFFFFF00;
-    
-    for (int i=0; i < N_MESH_FACES; i++) {
-        triangle_t triangle = triangles_to_render[i];
-        draw_rectangle(triangle.points[0].x, triangle.points[0].y, 3, 3, yellow);
-        draw_rectangle(triangle.points[1].x, triangle.points[1].y, 3, 3, yellow);    
-        draw_rectangle(triangle.points[2].x, triangle.points[2].y, 3, 3, yellow);
+    uint32_t black = 0x00000000;
+    int TRIANGLE_VERTICIES = 3;
+        
+    for (size_t triangle=0; triangle < triangles_to_render.count; triangle++) {
+        for (int vertex=0; vertex<TRIANGLE_VERTICIES; vertex++) {
+             draw_rectangle(triangles_to_render.items[triangle].points[vertex].x, triangles_to_render.items[triangle].points[vertex].y, 3, 3, yellow); 
+        }
+        draw_triangle(triangles_to_render.items[triangle], yellow);
+    } 
 
-        draw_line(triangle.points[0].x, triangle.points[1].x, triangle.points[0].y, triangle.points[1].y, yellow);
-        draw_line(triangle.points[1].x, triangle.points[2].x, triangle.points[1].y, triangle.points[2].y, yellow);    
-        draw_line(triangle.points[2].x, triangle.points[0].x, triangle.points[2].y, triangle.points[0].y, yellow);   
-    }
-       
+    da_clear(triangles_to_render);           
     render_colour_buffer();
-    clear_colour_buffer(0x00000000);    
+    clear_colour_buffer(black);    
     SDL_RenderPresent(renderer);
 }
 
