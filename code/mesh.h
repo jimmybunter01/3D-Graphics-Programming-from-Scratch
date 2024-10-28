@@ -3,11 +3,21 @@
 
 #include "vector.h"
 #include "triangle.h"
+#include "array.h"
+#include <stdlib.h>
 
-#define N_MESH_VERTICES 8
-#define N_MESH_FACES 12
+da_array(verticies_t, vec3_t);
+da_array(faces_t, face_t);
+da_array(triangles, triangle_t);
 
-extern vec3_t mesh_vertices[N_MESH_VERTICES];
-extern face_t mesh_faces[N_MESH_FACES];
+typedef struct {
+  verticies_t vertices;
+  faces_t faces;
+  vec3_t rotation;
+} mesh_t;
+
+extern mesh_t mesh;
+
+void load_obj_file_data(char*);
 
 #endif
