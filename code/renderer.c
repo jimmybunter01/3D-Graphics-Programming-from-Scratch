@@ -69,9 +69,9 @@ void update() {
     if (time_to_wait > 0 && time_to_wait <= FRAME_TARGET_TIME) {
         SDL_Delay(time_to_wait);
     }
-    mesh.rotation.x += 0.02;
-    mesh.rotation.y += 0.02;
-    mesh.rotation.z += 0.02;
+    mesh.rotation.x += 0.01;
+    mesh.rotation.y += 0.01;
+    mesh.rotation.z += 0.01;
 
     int num_mesh_faces = mesh.faces.count;
     for (int i=0; i < num_mesh_faces; i++) {
@@ -129,14 +129,13 @@ void free_resources() {
 int main(int argc, char *argv[]) {
     is_running = initialise_window();
 
-    // if (argc > 1) {
-    //     printf("\n%s\n", argv[1]);
-    //     if (strcmp(argv[1], "Cube") == 0) load_obj_file_data("../assets/cube.obj");
-    //     else if (strcmp(argv[1], "F22") == 0) load_obj_file_data("../assets/f22.obj");
-    //     else printf("Not a valid obj to load!");
-    // } else { load_obj_file_data("../assets/cube.obj"); }
+    if (argc > 1) {
+        printf("\n%s\n", argv[1]);
+        if (strcmp(argv[1], "Cube") == 0) load_obj_file_data("../assets/cube.obj");
+        else if (strcmp(argv[1], "F22") == 0) load_obj_file_data("../assets/f22.obj");
+        else printf("Not a valid obj to load!");
+    } else { load_obj_file_data("../assets/cube.obj"); }
 
-    load_obj_file_data("../assets/cube.obj");
     setup();
 
     while (is_running) {
