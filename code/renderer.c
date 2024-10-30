@@ -9,7 +9,7 @@
 #include <assert.h>
 #include <stdio.h>
 
-vec3_t camera_position = {.x=0, .y=0, .z=-5};
+vec3_t camera_position = {.x=0, .y=0, .z=0};
 
 float fov_factor = 640; // Magic Number for now!
 bool is_running = false;
@@ -60,7 +60,7 @@ vec2_t naive_orthographic_projection(vec3_t point) {
     return projected_point;
 }
 
-void update() {
+void update(float x_rotation, float y_rotation, float z_rotation) {
     // Proper way of makeing the execution wait until the appropriate amount of time has passed.
     // Ensures that the OS is correctly interacted with instead of blocking everything with a while loop.
     // Issue with this approach is that greater FPS == faster rotation rather than smoother!
@@ -69,9 +69,9 @@ void update() {
     if (time_to_wait > 0 && time_to_wait <= FRAME_TARGET_TIME) {
         SDL_Delay(time_to_wait);
     }
-    mesh.rotation.x += 0.01;
-    mesh.rotation.y += 0.01;
-    mesh.rotation.z += 0.01;
+    mesh.rotation.x += x_rotation;
+    mesh.rotation.y += y_rotation;
+    mesh.rotation.z += z_rotation;
 
     int num_mesh_faces = mesh.faces.count;
     for (int i=0; i < num_mesh_faces; i++) {
@@ -83,15 +83,42 @@ void update() {
         face_vertices[2] = mesh.vertices.items[mesh_face.c - 1];
 
         triangle_t projected_triangle;
+        vec3_t transformed_vertices[3];
+
         for (int j=0; j < 3; j++) {
             vec3_t transformed_vertex = face_vertices[j];
             transformed_vertex = vec3_rotate_x(transformed_vertex, mesh.rotation.x);
             transformed_vertex = vec3_rotate_y(transformed_vertex, mesh.rotation.y);
             transformed_vertex = vec3_rotate_z(transformed_vertex, mesh.rotation.z);
 
-            transformed_vertex.z -= camera_position.z;
+            transformed_vertex.z += 5;
+            transformed_vertices[j] = transformed_vertex;
+        }
 
-            vec2_t projected_vertex = naive_orthographic_projection(transformed_vertex);
+        // Back Face Culling
+        /*
+            A
+           / \
+          C---B  */
+
+        vec3_t vector_a = transformed_vertices[0];
+        vec3_t vector_b = transformed_vertices[1];
+        vec3_t vector_c = transformed_vertices[2];
+
+        vec3_t vector_ab = vec3_subtract(vector_b, vector_a);
+        vec3_t vector_ac = vec3_subtract(vector_c, vector_a);
+
+        vec3_t normal = vec3_cross_product(vector_ab, vector_ac);
+        vec3_t camera_ray = vec3_subtract(camera_position, vector_a);
+        float dot_product_camera = vec3_dot_product(normal, camera_ray);
+
+        // Only project the vertices which need to otherwise move onto the next face.
+        if (dot_product_camera < 0) {
+            continue;
+        }
+
+        for (int j=0; j < 3; j++) {
+            vec2_t projected_vertex = naive_orthographic_projection(transformed_vertices[j]);
             projected_vertex.x += (window_width / 2);
             projected_vertex.y += (window_height / 2);
 
@@ -128,11 +155,18 @@ void free_resources() {
 
 int main(int argc, char *argv[]) {
     is_running = initialise_window();
+    float x_rotation = 0.01;
+    float y_rotation = 0.01;
+    float z_rotation = 0.01;
 
     if (argc > 1) {
         printf("\n%s\n", argv[1]);
         if (strcmp(argv[1], "Cube") == 0) load_obj_file_data("../assets/cube.obj");
-        else if (strcmp(argv[1], "F22") == 0) load_obj_file_data("../assets/f22.obj");
+        else if (strcmp(argv[1], "F22") == 0) {
+            load_obj_file_data("../assets/f22.obj");
+            y_rotation = 0.0;
+            z_rotation = 0.0;
+        }
         else printf("Not a valid obj to load!");
     } else { load_obj_file_data("../assets/cube.obj"); }
 
@@ -140,7 +174,7 @@ int main(int argc, char *argv[]) {
 
     while (is_running) {
         process_input();
-        update();
+        update(x_rotation, y_rotation, z_rotation);
         render();
     }
 
