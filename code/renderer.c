@@ -82,7 +82,6 @@ void update(float x_rotation, float y_rotation, float z_rotation) {
         face_vertices[1] = mesh.vertices.items[mesh_face.b - 1];
         face_vertices[2] = mesh.vertices.items[mesh_face.c - 1];
 
-        triangle_t projected_triangle;
         vec3_t transformed_vertices[3];
 
         for (int j=0; j < 3; j++) {
@@ -101,23 +100,25 @@ void update(float x_rotation, float y_rotation, float z_rotation) {
            / \
           C---B  */
 
-        vec3_t vector_a = transformed_vertices[0];
-        vec3_t vector_b = transformed_vertices[1];
-        vec3_t vector_c = transformed_vertices[2];
 
-        vec3_t vector_ab = vec3_subtract(vector_b, vector_a);
-        vec3_t vector_ac = vec3_subtract(vector_c, vector_a);
+        // vec3_t vector_a = transformed_vertices[0];
+        // vec3_t vector_b = transformed_vertices[1];
+        // vec3_t vector_c = transformed_vertices[2];
 
-        vec3_t normal = vec3_cross_product(vector_ab, vector_ac);
-        vec3_normalise(&normal);
-        vec3_t camera_ray = vec3_subtract(camera_position, vector_a);
-        float dot_product_camera = vec3_dot_product(normal, camera_ray);
+        // vec3_t vector_ab = vec3_subtract(vector_b, vector_a);
+        // vec3_t vector_ac = vec3_subtract(vector_c, vector_a);
 
-        // Only project the vertices which need to otherwise move onto the next face.
-        if (dot_product_camera < 0) {
-            continue;
-        }
+        // vec3_t normal = vec3_cross_product(vector_ab, vector_ac);
+        // vec3_normalise(&normal);
+        // vec3_t camera_ray = vec3_subtract(camera_position, vector_a);
+        // float dot_product_camera = vec3_dot_product(normal, camera_ray);
 
+        // // Only project the vertices which need to otherwise move onto the next face.
+        // if (dot_product_camera < 0) {
+        //     continue;
+        // }
+
+        triangle_t projected_triangle;
         for (int j=0; j < 3; j++) {
             vec2_t projected_vertex = naive_orthographic_projection(transformed_vertices[j]);
             projected_vertex.x += (window_width / 2);
@@ -126,7 +127,16 @@ void update(float x_rotation, float y_rotation, float z_rotation) {
             projected_triangle.points[j] = projected_vertex;
         }
 
-        da_append(&triangles_to_render, projected_triangle);
+        vec2_t vertex_a = projected_triangle.points[0];
+        vec2_t vertex_b = projected_triangle.points[1];
+        vec2_t vertex_c = projected_triangle.points[2];
+
+        // area2 = (x0*y1 - x1*y0) + (x1*y2 - x2*y1) + (x2*y0 - x0*y2);
+
+        float signed_2area = (vertex_a.x * vertex_b.y - vertex_b.x * vertex_a.y) + (vertex_b.x * vertex_c.y - vertex_c.x * vertex_b.y) + (vertex_c.x * vertex_a.y - vertex_a.x * vertex_c.y);
+        if (signed_2area < 0) {
+            da_append(&triangles_to_render, projected_triangle);
+        } else continue;
     }
 }
 
