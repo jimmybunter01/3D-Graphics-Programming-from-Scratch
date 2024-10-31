@@ -109,6 +109,7 @@ void update(float x_rotation, float y_rotation, float z_rotation) {
         vec3_t vector_ac = vec3_subtract(vector_c, vector_a);
 
         vec3_t normal = vec3_cross_product(vector_ab, vector_ac);
+        vec3_normalise(&normal);
         vec3_t camera_ray = vec3_subtract(camera_position, vector_a);
         float dot_product_camera = vec3_dot_product(normal, camera_ray);
 
