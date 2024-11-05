@@ -151,25 +151,27 @@ void update(float x_rotation, float y_rotation, float z_rotation) {
             projected_triangle.points[j] = projected_vertex;
         }
 
-        vec2_t vertex_a = projected_triangle.points[0];
-        vec2_t vertex_b = projected_triangle.points[1];
-        vec2_t vertex_c = projected_triangle.points[2];
+        if (backface_culling) {
+            vec2_t vertex_a = projected_triangle.points[0];
+            vec2_t vertex_b = projected_triangle.points[1];
+            vec2_t vertex_c = projected_triangle.points[2];
 
-        float signed_2area = (vertex_a.x * vertex_b.y - vertex_b.x * vertex_a.y) + (vertex_b.x * vertex_c.y - vertex_c.x * vertex_b.y) + (vertex_c.x * vertex_a.y - vertex_a.x * vertex_c.y);
-        if (signed_2area < 0) {
-            da_append(&triangles_to_render, projected_triangle);
-        } else continue;
+            float signed_2area = (vertex_a.x * vertex_b.y - vertex_b.x * vertex_a.y) + (vertex_b.x * vertex_c.y - vertex_c.x * vertex_b.y) + (vertex_c.x * vertex_a.y - vertex_a.x * vertex_c.y);
+            if (signed_2area < 0) {
+                da_append(&triangles_to_render, projected_triangle);
+            } else continue;
+        } else da_append(&triangles_to_render, projected_triangle);
     }
 }
 
 void render() {
     uint32_t yellow = 0xFFFFFF00;
-    uint32_t black = 0x00000000;
-    uint32_t white = 0xFFFFFFFF;
+    uint32_t black  = 0x00000000;
+    uint32_t white  = 0xFFFFFFFF;
+    uint32_t red    = 0xFF000000;
 
     for (size_t triangle=0; triangle < triangles_to_render.count; triangle++) {
-
-        if (filled_triangles & wireframe_lines) {
+        if (filled_triangles && wireframe_lines) {
             draw_triangle(triangles_to_render.items[triangle], black);
             draw_filled_triangle(triangles_to_render.items[triangle], white);
         }
@@ -177,6 +179,18 @@ void render() {
             draw_filled_triangle(triangles_to_render.items[triangle], white);
         } else if (wireframe_lines) {
             draw_triangle(triangles_to_render.items[triangle], yellow);
+        }
+
+        if (vertex_dots) {
+            triangle_t current_triangle = triangles_to_render.items[triangle];
+            draw_pixel(current_triangle.points[0].x, current_triangle.points[0].y, red);
+            draw_pixel(current_triangle.points[0].x, current_triangle.points[0].y, red);
+            draw_pixel(current_triangle.points[1].x, current_triangle.points[1].y, red);
+            draw_pixel(current_triangle.points[1].x, current_triangle.points[1].y, red);
+            draw_pixel(current_triangle.points[2].x, current_triangle.points[2].y, red);
+            draw_pixel(current_triangle.points[2].x, current_triangle.points[2].y, red);
+        } else {
+            continue;
         }
     }
 
