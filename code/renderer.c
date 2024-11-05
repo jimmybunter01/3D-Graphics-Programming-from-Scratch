@@ -13,6 +13,10 @@ vec3_t camera_position = {.x=0, .y=0, .z=0};
 
 float fov_factor = 640; // Magic Number for now!
 bool is_running = false;
+bool filled_triangles = true;
+bool wireframe_lines = false;
+bool vertex_dots = false;
+bool backface_culling = true;
 int previous_frame_time = 0;
 
 da_array(mesh_triangles, triangle_t)
@@ -45,9 +49,29 @@ void process_input() {
       case SDL_KEYDOWN:
         if (event.key.keysym.sym == SDLK_ESCAPE) {
             is_running = false;
+        } else if (event.key.keysym.sym == SDLK_w) {
+            wireframe_lines = !wireframe_lines;
+        } else if (event.key.keysym.sym == SDLK_d) {
+            vertex_dots = !vertex_dots;
+        } else if (event.key.keysym.sym == SDLK_f) {
+            filled_triangles = !filled_triangles;
+            wireframe_lines = true;
+        } else if (event.key.keysym.sym == SDLK_d) {
+            vertex_dots = !vertex_dots;
+        } else if (event.key.keysym.sym == SDLK_c) {
+            backface_culling = !backface_culling;
         }
         break;
     }
+
+    /*
+    - Pressing “1” displays the wireframe and a small red dot for each triangle vertex
+    - Pressing “2” displays only the wireframe lines
+    - Pressing “3” displays filled triangles with a solid color
+    - Pressing “4” displays both filled triangles and wireframe lines
+    - Pressing “c” we should enable back-face culling
+    - Pressing “d” we should disable the back-face culling
+    */
 
 }
 
@@ -131,8 +155,6 @@ void update(float x_rotation, float y_rotation, float z_rotation) {
         vec2_t vertex_b = projected_triangle.points[1];
         vec2_t vertex_c = projected_triangle.points[2];
 
-        // area2 = (x0*y1 - x1*y0) + (x1*y2 - x2*y1) + (x2*y0 - x0*y2);
-
         float signed_2area = (vertex_a.x * vertex_b.y - vertex_b.x * vertex_a.y) + (vertex_b.x * vertex_c.y - vertex_c.x * vertex_b.y) + (vertex_c.x * vertex_a.y - vertex_a.x * vertex_c.y);
         if (signed_2area < 0) {
             da_append(&triangles_to_render, projected_triangle);
@@ -143,13 +165,19 @@ void update(float x_rotation, float y_rotation, float z_rotation) {
 void render() {
     uint32_t yellow = 0xFFFFFF00;
     uint32_t black = 0x00000000;
-    int TRIANGLE_VERTICIES = 3;
+    uint32_t white = 0xFFFFFFFF;
 
     for (size_t triangle=0; triangle < triangles_to_render.count; triangle++) {
-        for (int vertex=0; vertex<TRIANGLE_VERTICIES; vertex++) {
-             draw_rectangle(triangles_to_render.items[triangle].points[vertex].x, triangles_to_render.items[triangle].points[vertex].y, 3, 3, yellow);
+
+        if (filled_triangles & wireframe_lines) {
+            draw_triangle(triangles_to_render.items[triangle], black);
+            draw_filled_triangle(triangles_to_render.items[triangle], white);
         }
-        draw_triangle(triangles_to_render.items[triangle], yellow);
+        else if (filled_triangles) {
+            draw_filled_triangle(triangles_to_render.items[triangle], white);
+        } else if (wireframe_lines) {
+            draw_triangle(triangles_to_render.items[triangle], yellow);
+        }
     }
 
     da_clear(triangles_to_render);
