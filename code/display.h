@@ -16,10 +16,17 @@ extern SDL_Texture* colour_buffer_texture;
 extern int window_width;
 extern int window_height;
 
+enum render_settings {
+    FILLED_TRIANGLES    = 1 << 1,
+    WIREFRAME           = 1 << 2,
+    VERTEX_DOTS         = 1 << 3,
+    BACKFACE_CULLING    = 1 << 4
+} render_settings;
+
 bool initialise_window(void);
-void my_draw_grid(int multiple); 
+void my_draw_grid(int multiple);
 void draw_grid(int multiple);
-void draw_pixel(int x, int y, uint32_t colour); 
+void draw_pixel(int x, int y, uint32_t colour);
 void draw_rectangle(int x, int y, int width, int height, uint32_t colour);
 void draw_line(int x0, int x1, int y0, int y1, uint32_t colour);
 void draw_triangle(triangle_t triangle, uint32_t colour);

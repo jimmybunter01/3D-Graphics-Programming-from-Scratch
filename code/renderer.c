@@ -10,13 +10,8 @@
 #include <stdio.h>
 
 vec3_t camera_position = {.x=0, .y=0, .z=0};
-
 float fov_factor = 640; // Magic Number for now!
 bool is_running = false;
-bool filled_triangles = true;
-bool wireframe_lines = false;
-bool vertex_dots = false;
-bool backface_culling = true;
 int previous_frame_time = 0;
 
 da_array(mesh_triangles, triangle_t)
@@ -26,6 +21,8 @@ void setup() {
     // Colour Buffer is a 1D representation od a 2D array.
     colour_buffer = (uint32_t*) malloc(sizeof(uint32_t) * window_width * window_height);
     assert(colour_buffer);
+
+    render_settings = BACKFACE_CULLING | FILLED_TRIANGLES | WIREFRAME;
 
     // SDL Texture is used to display the colour buffer.
     colour_buffer_texture = SDL_CreateTexture(
@@ -50,29 +47,24 @@ void process_input() {
         if (event.key.keysym.sym == SDLK_ESCAPE) {
             is_running = false;
         } else if (event.key.keysym.sym == SDLK_w) {
-            wireframe_lines = !wireframe_lines;
+            render_settings ^= WIREFRAME;
         } else if (event.key.keysym.sym == SDLK_d) {
-            vertex_dots = !vertex_dots;
+            render_settings ^= VERTEX_DOTS;
         } else if (event.key.keysym.sym == SDLK_f) {
-            filled_triangles = !filled_triangles;
-            wireframe_lines = true;
-        } else if (event.key.keysym.sym == SDLK_d) {
-            vertex_dots = !vertex_dots;
+            render_settings ^= FILLED_TRIANGLES;
         } else if (event.key.keysym.sym == SDLK_c) {
-            backface_culling = !backface_culling;
+            render_settings ^= BACKFACE_CULLING;
+        } else if (event.key.keysym.sym == SDLK_1) {
+            da_clear(mesh.vertices);
+            da_clear(mesh.faces);
+            load_obj_file_data("../assets/cube.obj");
+        } else if (event.key.keysym.sym == SDLK_2) {
+            da_clear(mesh.vertices);
+            da_clear(mesh.faces);
+            load_obj_file_data("../assets/f22.obj");
         }
         break;
     }
-
-    /*
-    - Pressing “1” displays the wireframe and a small red dot for each triangle vertex
-    - Pressing “2” displays only the wireframe lines
-    - Pressing “3” displays filled triangles with a solid color
-    - Pressing “4” displays both filled triangles and wireframe lines
-    - Pressing “c” we should enable back-face culling
-    - Pressing “d” we should disable the back-face culling
-    */
-
 }
 
 // Project a 3D vector in 2D.
@@ -151,7 +143,7 @@ void update(float x_rotation, float y_rotation, float z_rotation) {
             projected_triangle.points[j] = projected_vertex;
         }
 
-        if (backface_culling) {
+        if ((render_settings & BACKFACE_CULLING) == BACKFACE_CULLING) {
             vec2_t vertex_a = projected_triangle.points[0];
             vec2_t vertex_b = projected_triangle.points[1];
             vec2_t vertex_c = projected_triangle.points[2];
@@ -168,27 +160,30 @@ void render() {
     uint32_t yellow = 0xFFFFFF00;
     uint32_t black  = 0x00000000;
     uint32_t white  = 0xFFFFFFFF;
-    uint32_t red    = 0xFF000000;
+    uint32_t red    = 0xFFFF0000;
+    uint32_t grey   = 0x00999999;
+    uint32_t green  = 0xFF00FF00;
+    uint32_t blue   = 0xFF0000FF;
 
     for (size_t triangle=0; triangle < triangles_to_render.count; triangle++) {
-        if (filled_triangles && wireframe_lines) {
-            draw_triangle(triangles_to_render.items[triangle], black);
-            draw_filled_triangle(triangles_to_render.items[triangle], white);
+        if ((render_settings & (FILLED_TRIANGLES | WIREFRAME)) == (FILLED_TRIANGLES | WIREFRAME)) {
+            draw_filled_triangle(triangles_to_render.items[triangle], grey);
+            draw_triangle(triangles_to_render.items[triangle], white);
         }
-        else if (filled_triangles) {
-            draw_filled_triangle(triangles_to_render.items[triangle], white);
-        } else if (wireframe_lines) {
-            draw_triangle(triangles_to_render.items[triangle], yellow);
+        else if ((render_settings & FILLED_TRIANGLES) == FILLED_TRIANGLES) {
+            draw_filled_triangle(triangles_to_render.items[triangle], grey);
+        } else if ((render_settings & WIREFRAME) == WIREFRAME) {
+            draw_triangle(triangles_to_render.items[triangle], white);
         }
 
-        if (vertex_dots) {
+        if ((render_settings & VERTEX_DOTS) == VERTEX_DOTS) {
             triangle_t current_triangle = triangles_to_render.items[triangle];
-            draw_pixel(current_triangle.points[0].x, current_triangle.points[0].y, red);
-            draw_pixel(current_triangle.points[0].x, current_triangle.points[0].y, red);
-            draw_pixel(current_triangle.points[1].x, current_triangle.points[1].y, red);
-            draw_pixel(current_triangle.points[1].x, current_triangle.points[1].y, red);
-            draw_pixel(current_triangle.points[2].x, current_triangle.points[2].y, red);
-            draw_pixel(current_triangle.points[2].x, current_triangle.points[2].y, red);
+            draw_rectangle(current_triangle.points[0].x - 5, current_triangle.points[0].y - 5, 10, 10, red);
+            draw_rectangle(current_triangle.points[0].x - 5, current_triangle.points[0].y - 5, 10, 10, red);
+            draw_rectangle(current_triangle.points[1].x - 5, current_triangle.points[1].y - 5, 10, 10, red);
+            draw_rectangle(current_triangle.points[1].x - 5, current_triangle.points[1].y - 5, 10, 10, red);
+            draw_rectangle(current_triangle.points[2].x - 5, current_triangle.points[2].y - 5, 10, 10, red);
+            draw_rectangle(current_triangle.points[2].x - 5, current_triangle.points[2].y - 5, 10, 10, red);
         } else {
             continue;
         }
