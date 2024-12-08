@@ -17,8 +17,8 @@ bool initialise_window(void) {
   // Set window to be fullscreen! Video mode is not true fullscreen yet though!
   SDL_DisplayMode display_mode;
   SDL_GetCurrentDisplayMode(0, &display_mode);
-  window_width = display_mode.w;
-  window_height = display_mode.h;
+  window_width = 1920; //display_mode.w;
+  window_height = 1080; //display_mode.h;
 
   // Print out the actual window size and height! Then I don't get confused like I did when creating the rectangle! (JWG - 14/08/2024)
   printf("Width: %i, Height: %i", window_width, window_height);

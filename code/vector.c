@@ -44,8 +44,8 @@ float vec2_dot_product(vec2_t a, vec2_t b) {
 void vec2_normalise(vec2_t *vector) {
     float length = sqrt(vector->x * vector->x + vector->y * vector->y);
 
-    vector->x = vector->x / length;
-    vector->y = vector->y / length;
+    vector->x /= length;
+    vector->y /= length;
 }
 
 float vec3_length(vec3_t vector) {
@@ -103,9 +103,9 @@ float vec3_dot_product(vec3_t a, vec3_t b) {
 
 void vec3_normalise(vec3_t *vector) {
     float length = sqrt(vector->x * vector->x + vector->y * vector->y + vector->z * vector->z);
-    vector->x = vector->x / length;
-    vector->y = vector->y / length;
-    vector->z = vector->z / length;
+    vector->x /= length;
+    vector->y /= length;
+    vector->z /= length;
 }
 
 vec3_t vec3_rotate_x(vec3_t v, float angle) {
@@ -135,4 +135,14 @@ vec3_t vec3_rotate_z(vec3_t v, float angle) {
       .z = v.z
   };
   return rotated_vector;
+}
+
+vec4_t vec4_from_vec3(vec3_t v) {
+    vec4_t result = {v.x, v.y, v.z, 1.0};
+    return result;
+}
+
+vec3_t vec3_from_vec4(vec4_t v) {
+    vec3_t result = {v.x, v.y, v.z};
+    return result;
 }

@@ -20,7 +20,6 @@ typedef struct {                 \
                                                                                                    \
         (array)->items[(array)->count++] = (x);                                                    \
     } while (0)
-#endif
 
 #define da_clear(array)        \
 	do {                       \
@@ -33,3 +32,5 @@ typedef struct {                 \
   do {                        \
 	  free((array)->items);   \
   } while (0)
+
+#endif

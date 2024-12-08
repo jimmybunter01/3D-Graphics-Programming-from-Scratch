@@ -3,26 +3,56 @@
 
 #include "display.h"
 #include "vector.h"
+#include "colours.h"
 #include "mesh.h"
 #include "array.h"
+#include "triangle.h"
+#include "matrix.h"
+#include "light.h"
 #include <stdbool.h>
 #include <assert.h>
 #include <stdio.h>
+#include <math.h>
 
 vec3_t camera_position = {.x=0, .y=0, .z=0};
-float fov_factor = 640; // Magic Number for now!
 bool is_running = false;
 int previous_frame_time = 0;
-
+float x_rotation;
+float y_rotation;
+float z_rotation;
 da_array(mesh_triangles, triangle_t)
 mesh_triangles triangles_to_render = {};
+mat4_t perspective_projection_matrix;
+
+void load_cube_data() {
+    // uint32_t face_colours[] = {YELLOW, GREEN, BLUE, RED, GREY, WHITE};
+    uint32_t face_colours[] = {WHITE};
+    int no_of_colours = sizeof(face_colours) / sizeof(face_colours[0]);
+    x_rotation = y_rotation = z_rotation = 0.001;
+    mesh.scale.x = mesh.scale.y = mesh.scale.z = 1;
+    load_obj_file_data("../assets/cube.obj", face_colours, no_of_colours);
+}
+
+void load_f22_data() {
+    uint32_t face_colours[1] = {WHITE};
+    y_rotation = z_rotation = 0;
+    mesh.rotation.x = mesh.rotation.y = mesh.rotation.z = 0;
+    mesh.scale.x = mesh.scale.y = mesh.scale.z = 1;
+    load_obj_file_data("../assets/f22.obj", face_colours, 1);
+}
 
 void setup() {
     // Colour Buffer is a 1D representation od a 2D array.
     colour_buffer = (uint32_t*) malloc(sizeof(uint32_t) * window_width * window_height);
     assert(colour_buffer);
 
-    render_settings = BACKFACE_CULLING | FILLED_TRIANGLES | WIREFRAME;
+    render_settings = BACKFACE_CULLING | FILLED_TRIANGLES;
+
+    float fov = M_PI / 2; // FOV is given in Radians.
+    float aspect = (float)window_height/ (float)window_width;
+    float znear = 0.1; // Arbitraary Value
+    float zfar = 100.0; // Arbitraary Value
+    perspective_projection_matrix = mat4_make_perspective(fov, aspect, zfar, znear);
 
     // SDL Texture is used to display the colour buffer.
     colour_buffer_texture = SDL_CreateTexture(
@@ -57,23 +87,57 @@ void process_input() {
         } else if (event.key.keysym.sym == SDLK_1) {
             da_clear(mesh.vertices);
             da_clear(mesh.faces);
-            load_obj_file_data("../assets/cube.obj");
+            load_cube_data();
         } else if (event.key.keysym.sym == SDLK_2) {
             da_clear(mesh.vertices);
             da_clear(mesh.faces);
-            load_obj_file_data("../assets/f22.obj");
+            load_f22_data();
         }
         break;
     }
 }
 
 // Project a 3D vector in 2D.
-vec2_t naive_orthographic_projection(vec3_t point) {
-    vec2_t projected_point = {
-        .x = (point.x * fov_factor) / point.z,
-        .y = (point.y * fov_factor) / point.z
-    };
-    return projected_point;
+// vec2_t naive_orthographic_projection(vec3_t point) {
+//     vec2_t projected_point = {
+//         .x = (point.x * fov_factor) / point.z,
+//         .y = (point.y * fov_factor) / point.z
+//     };
+//     return projected_point;
+// }
+
+int mesh_triangle_quicksort_partition(triangle_t *triangles, int start, int end) {
+    float pivot = triangles[end].avg_depth;
+    int i = start;
+    for (int j=start; j < end; j++) {
+        if (triangles[j].avg_depth >= pivot) {
+            triangle_swap(&triangles[i], &triangles[j]);
+            i++;
+        }
+    }
+    triangle_swap(&triangles[i], &triangles[end]);
+    return i;
+}
+
+void mesh_triangle_quicksort(triangle_t *triangles_to_sort, int start, int end) {
+    /*
+    Lomuto Partition Scheme https://www.wikiwand.com/en/articles/Quicksort#Lomuto_partition_scheme
+
+    ---Steps:---
+    1. If count < 2 do nothing.
+    2. Pick a pivot point.
+    3. Split the array based on this pivot point.
+        i. All the value less than this must be before the pivot.
+        ii. Apply recursively.
+    */
+
+    if ((start >= end) || (start < 0)) {
+        return;
+    } else {
+        int pivot_index = mesh_triangle_quicksort_partition(triangles_to_sort, start, end);
+        mesh_triangle_quicksort(triangles_to_sort, start, (pivot_index - 1));
+        mesh_triangle_quicksort(triangles_to_sort, pivot_index + 1, end);
+    }
 }
 
 void update(float x_rotation, float y_rotation, float z_rotation) {
@@ -85,9 +149,27 @@ void update(float x_rotation, float y_rotation, float z_rotation) {
     if (time_to_wait > 0 && time_to_wait <= FRAME_TARGET_TIME) {
         SDL_Delay(time_to_wait);
     }
-    mesh.rotation.x += x_rotation;
-    mesh.rotation.y += y_rotation;
-    mesh.rotation.z += z_rotation;
+
+    mesh.rotation.x += 0.001;
+    // mesh.rotation.y += 0.01;
+    // mesh.rotation.z += 0.01;
+    // mesh.scale.x += 0.002;
+    // mesh.scale.y += 0.001;
+    // mesh.translation.x += 0.01;
+    mesh.translation.z = 5.0;
+
+    mat4_t scale_matrix = mat4_make_scale(mesh.scale.x, mesh.scale.y, mesh.scale.z);
+    mat4_t translation_matrix = mat4_make_translation(mesh.translation.x, mesh.translation.y, mesh.translation.z);
+    mat4_t rotation_matrix_x = mat4_make_rotation_x(mesh.rotation.x);
+    mat4_t rotation_matrix_y = mat4_make_rotation_y(mesh.rotation.y);
+    mat4_t rotation_matrix_z = mat4_make_rotation_z(mesh.rotation.z);
+
+    mat4_t world_matrix = mat4_identity();
+    world_matrix = mat4_mul_mat4(scale_matrix, world_matrix);
+    world_matrix = mat4_mul_mat4(rotation_matrix_z, world_matrix);
+    world_matrix = mat4_mul_mat4(rotation_matrix_y, world_matrix);
+    world_matrix = mat4_mul_mat4(rotation_matrix_x, world_matrix);
+    world_matrix = mat4_mul_mat4(translation_matrix, world_matrix);
 
     int num_mesh_faces = mesh.faces.count;
     for (int i=0; i < num_mesh_faces; i++) {
@@ -98,15 +180,25 @@ void update(float x_rotation, float y_rotation, float z_rotation) {
         face_vertices[1] = mesh.vertices.items[mesh_face.b - 1];
         face_vertices[2] = mesh.vertices.items[mesh_face.c - 1];
 
-        vec3_t transformed_vertices[3];
+        vec4_t transformed_vertices[3];
 
         for (int j=0; j < 3; j++) {
-            vec3_t transformed_vertex = face_vertices[j];
-            transformed_vertex = vec3_rotate_x(transformed_vertex, mesh.rotation.x);
-            transformed_vertex = vec3_rotate_y(transformed_vertex, mesh.rotation.y);
-            transformed_vertex = vec3_rotate_z(transformed_vertex, mesh.rotation.z);
+            vec4_t transformed_vertex = vec4_from_vec3(face_vertices[j]);
 
-            transformed_vertex.z += 5;
+            // Matrix replaces this code!
+            // transformed_vertex = vec3_rotate_x(transformed_vertex, mesh.rotation.x);
+            // transformed_vertex = vec3_rotate_y(transformed_vertex, mesh.rotation.y);
+            // transformed_vertex = vec3_rotate_z(transformed_vertex, mesh.rotation.z);
+
+            // World Matrix Replaces this code!
+            // Need to make sure that the oder of operations is correct - Matrix Multiplcation is not commutative.
+            // transformed_vertex = mat4_mul_vec4(scale_matrix, transformed_vertex);
+            // transformed_vertex = mat4_mul_vec4(rotation_matrix_x, transformed_vertex);
+            // transformed_vertex = mat4_mul_vec4(rotation_matrix_y, transformed_vertex);
+            // transformed_vertex = mat4_mul_vec4(rotation_matrix_z, transformed_vertex);
+            // transformed_vertex = mat4_mul_vec4(translation_matrix, transformed_vertex);
+
+            transformed_vertex = mat4_mul_vec4(world_matrix, transformed_vertex);
             transformed_vertices[j] = transformed_vertex;
         }
 
@@ -116,32 +208,71 @@ void update(float x_rotation, float y_rotation, float z_rotation) {
            / \
           C---B  */
 
-
-        // vec3_t vector_a = transformed_vertices[0];
-        // vec3_t vector_b = transformed_vertices[1];
-        // vec3_t vector_c = transformed_vertices[2];
+        // vec3_t vector_a = vec3_from_vec4(transformed_vertices[0]);
+        // vec3_t vector_b = vec3_from_vec4(transformed_vertices[1]);
+        // vec3_t vector_c = vec3_from_vec4(transformed_vertices[2]);
 
         // vec3_t vector_ab = vec3_subtract(vector_b, vector_a);
         // vec3_t vector_ac = vec3_subtract(vector_c, vector_a);
+        // vec3_normalise(&vector_ab);
+        // vec3_normalise(&vector_ac);
+
 
         // vec3_t normal = vec3_cross_product(vector_ab, vector_ac);
         // vec3_normalise(&normal);
+
         // vec3_t camera_ray = vec3_subtract(camera_position, vector_a);
         // float dot_product_camera = vec3_dot_product(normal, camera_ray);
 
-        // // Only project the vertices which need to otherwise move onto the next face.
-        // if (dot_product_camera < 0) {
-        //     continue;
+        // if ((render_settings & BACKFACE_CULLING) == BACKFACE_CULLING) {
+        //     // Only project the vertices which need to otherwise move onto the next face.
+        //     if (dot_product_camera < 0) {
+        //         continue;
+        //     }
         // }
 
-        triangle_t projected_triangle;
+        vec4_t projected_points[3];
         for (int j=0; j < 3; j++) {
-            vec2_t projected_vertex = naive_orthographic_projection(transformed_vertices[j]);
-            projected_vertex.x += (window_width / 2);
-            projected_vertex.y += (window_height / 2);
+            // projected_points[j] = naive_orthographic_projection(vec3_from_vec4(transformed_vertices[j]));
+            projected_points[j] = mat4_mul_vec4_project(perspective_projection_matrix, transformed_vertices[j]);
 
-            projected_triangle.points[j] = projected_vertex;
+            // Scale into the view
+            projected_points[j].x *= (window_width>>1);
+            projected_points[j].y *= (window_height>>1);
+
+            // Invert the y values to account for flipped screen y coordinates
+            projected_points[j].x *= -1;
+            projected_points[j].y *= -1;
+
+            // Translate the points to the middle.
+            projected_points[j].x += (window_width>>1);
+            projected_points[j].y += (window_height>>1);
         }
+
+        vec3_t vector_a = vec3_from_vec4(transformed_vertices[0]);
+        vec3_t vector_b = vec3_from_vec4(transformed_vertices[1]);
+        vec3_t vector_c = vec3_from_vec4(transformed_vertices[2]);
+
+        vec3_t vector_ab = vec3_subtract(vector_a, vector_b);
+        vec3_t vector_ac = vec3_subtract(vector_a, vector_c);
+        vec3_t normal = vec3_cross_product(vector_ab, vector_ac);
+        vec3_normalise(&normal);
+
+        // Negative to ensure that we are calculating the correct intensinty factor.
+        // Intuitive to envision the 'photons' of light we've placed heading along the direction of light, which makes sense.
+        // Instead we need the direction of the ray we need to use to get the correct dot product value has to be inverse.
+        float light_intensity_factor = -vec3_dot_product(normal, light.direction);
+        uint32_t new_colour = light_apply_intensity(mesh_face.colour, light_intensity_factor);
+
+        triangle_t projected_triangle = {
+            .points = {
+                {projected_points[0].x, projected_points[0].y},
+                {projected_points[1].x, projected_points[1].y},
+                {projected_points[2].x, projected_points[2].y}
+            },
+            .colour = new_colour,
+            .avg_depth = (transformed_vertices[0].z + transformed_vertices[1].z + transformed_vertices[2].z) / 3
+        };
 
         if ((render_settings & BACKFACE_CULLING) == BACKFACE_CULLING) {
             vec2_t vertex_a = projected_triangle.points[0];
@@ -153,37 +284,31 @@ void update(float x_rotation, float y_rotation, float z_rotation) {
                 da_append(&triangles_to_render, projected_triangle);
             } else continue;
         } else da_append(&triangles_to_render, projected_triangle);
+        da_append(&triangles_to_render, projected_triangle);
     }
+    mesh_triangle_quicksort(triangles_to_render.items, 0, triangles_to_render.count-1);
 }
 
 void render() {
-    uint32_t yellow = 0xFFFFFF00;
-    uint32_t black  = 0x00000000;
-    uint32_t white  = 0xFFFFFFFF;
-    uint32_t red    = 0xFFFF0000;
-    uint32_t grey   = 0x00999999;
-    uint32_t green  = 0xFF00FF00;
-    uint32_t blue   = 0xFF0000FF;
-
-    for (size_t triangle=0; triangle < triangles_to_render.count; triangle++) {
+    for (size_t i=0; i < triangles_to_render.count; i++) {
+        triangle_t triangle = triangles_to_render.items[i];
         if ((render_settings & (FILLED_TRIANGLES | WIREFRAME)) == (FILLED_TRIANGLES | WIREFRAME)) {
-            draw_filled_triangle(triangles_to_render.items[triangle], grey);
-            draw_triangle(triangles_to_render.items[triangle], white);
+            draw_filled_triangle(triangle, triangle.colour);
+            draw_triangle(triangle, WHITE);
         }
         else if ((render_settings & FILLED_TRIANGLES) == FILLED_TRIANGLES) {
-            draw_filled_triangle(triangles_to_render.items[triangle], grey);
+            draw_filled_triangle(triangle, triangle.colour);
         } else if ((render_settings & WIREFRAME) == WIREFRAME) {
-            draw_triangle(triangles_to_render.items[triangle], white);
+            draw_triangle(triangle, WHITE);
         }
 
         if ((render_settings & VERTEX_DOTS) == VERTEX_DOTS) {
-            triangle_t current_triangle = triangles_to_render.items[triangle];
-            draw_rectangle(current_triangle.points[0].x - 5, current_triangle.points[0].y - 5, 10, 10, red);
-            draw_rectangle(current_triangle.points[0].x - 5, current_triangle.points[0].y - 5, 10, 10, red);
-            draw_rectangle(current_triangle.points[1].x - 5, current_triangle.points[1].y - 5, 10, 10, red);
-            draw_rectangle(current_triangle.points[1].x - 5, current_triangle.points[1].y - 5, 10, 10, red);
-            draw_rectangle(current_triangle.points[2].x - 5, current_triangle.points[2].y - 5, 10, 10, red);
-            draw_rectangle(current_triangle.points[2].x - 5, current_triangle.points[2].y - 5, 10, 10, red);
+            draw_rectangle(triangle.points[0].x - 5, triangle.points[0].y - 5, 10, 10, RED);
+            draw_rectangle(triangle.points[0].x - 5, triangle.points[0].y - 5, 10, 10, RED);
+            draw_rectangle(triangle.points[1].x - 5, triangle.points[1].y - 5, 10, 10, RED);
+            draw_rectangle(triangle.points[1].x - 5, triangle.points[1].y - 5, 10, 10, RED);
+            draw_rectangle(triangle.points[2].x - 5, triangle.points[2].y - 5, 10, 10, RED);
+            draw_rectangle(triangle.points[2].x - 5, triangle.points[2].y - 5, 10, 10, RED);
         } else {
             continue;
         }
@@ -191,7 +316,7 @@ void render() {
 
     da_clear(triangles_to_render);
     render_colour_buffer();
-    clear_colour_buffer(black);
+    clear_colour_buffer(BLACK);
     SDL_RenderPresent(renderer);
 }
 
@@ -203,20 +328,13 @@ void free_resources() {
 
 int main(int argc, char *argv[]) {
     is_running = initialise_window();
-    float x_rotation = 0.01;
-    float y_rotation = 0.01;
-    float z_rotation = 0.01;
 
     if (argc > 1) {
         printf("\n%s\n", argv[1]);
-        if (strcmp(argv[1], "Cube") == 0) load_obj_file_data("../assets/cube.obj");
-        else if (strcmp(argv[1], "F22") == 0) {
-            load_obj_file_data("../assets/f22.obj");
-            y_rotation = 0.0;
-            z_rotation = 0.0;
-        }
+        if (strcmp(argv[1], "Cube") == 0) load_cube_data();
+        else if (strcmp(argv[1], "F22") == 0) load_f22_data();
         else printf("Not a valid obj to load!");
-    } else { load_obj_file_data("../assets/cube.obj"); }
+    } else load_cube_data();
 
     setup();
 

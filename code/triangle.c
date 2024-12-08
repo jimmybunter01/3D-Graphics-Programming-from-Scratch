@@ -7,6 +7,12 @@ void swap(int *a, int *b) {
     *b = tmp;
 }
 
+void triangle_swap(triangle_t *a, triangle_t *b) {
+    triangle_t tmp = *a;
+    *a = *b;
+    *b = tmp;
+}
+
 void fill_flat_bottom_triangle(int x0, int y0, int x1, int y1, int x2, int y2, uint32_t colour) {
     float inverted_slope_1 = (float)(x1 - x0) / (y1 - y0);
     float inverted_slope_2 = (float)(x2 - x0) / (y2 - y0);

@@ -14,10 +14,12 @@ typedef struct {
   verticies_t vertices;
   faces_t faces;
   vec3_t rotation;
+  vec3_t scale;
+  vec3_t translation;
 } mesh_t;
 
 extern mesh_t mesh;
 
-void load_obj_file_data(char*);
+void load_obj_file_data(char* filename, uint32_t face_colours[], int no_of_colours);
 
 #endif
