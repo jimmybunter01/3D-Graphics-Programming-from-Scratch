@@ -9,6 +9,7 @@
 #include "triangle.h"
 #include "matrix.h"
 #include "light.h"
+#include "texture.h"
 #include <stdbool.h>
 #include <assert.h>
 #include <stdio.h>
@@ -23,6 +24,12 @@ float z_rotation;
 da_array(mesh_triangles, triangle_t)
 mesh_triangles triangles_to_render = {};
 mat4_t perspective_projection_matrix;
+
+void test_cube_data() {
+    x_rotation = y_rotation = z_rotation = 0.001;
+    mesh.scale.x = mesh.scale.y = mesh.scale.z = 1;
+    manual_cube_load(WHITE);
+}
 
 void load_cube_data() {
     // uint32_t face_colours[] = {YELLOW, GREEN, BLUE, RED, GREY, WHITE};
@@ -46,13 +53,14 @@ void setup() {
     colour_buffer = (uint32_t*) malloc(sizeof(uint32_t) * window_width * window_height);
     assert(colour_buffer);
 
-    render_settings = BACKFACE_CULLING | FILLED_TRIANGLES;
+    render_settings = BACKFACE_CULLING | TEXTURED;
 
     float fov = M_PI / 2; // FOV is given in Radians.
     float aspect = (float)window_height/ (float)window_width;
     float znear = 0.1; // Arbitraary Value
     float zfar = 100.0; // Arbitraary Value
     perspective_projection_matrix = mat4_make_perspective(fov, aspect, zfar, znear);
+    mesh_texture = (uint32_t*)REDBRICK_TEXTURE;
 
     // SDL Texture is used to display the colour buffer.
     colour_buffer_texture = SDL_CreateTexture(
@@ -84,15 +92,18 @@ void process_input() {
             render_settings ^= FILLED_TRIANGLES;
         } else if (event.key.keysym.sym == SDLK_c) {
             render_settings ^= BACKFACE_CULLING;
-        } else if (event.key.keysym.sym == SDLK_1) {
-            da_clear(mesh.vertices);
-            da_clear(mesh.faces);
-            load_cube_data();
-        } else if (event.key.keysym.sym == SDLK_2) {
-            da_clear(mesh.vertices);
-            da_clear(mesh.faces);
-            load_f22_data();
+        } else if (event.key.keysym.sym == SDLK_t) {
+            render_settings ^= TEXTURED;
         }
+        // } else if (event.key.keysym.sym == SDLK_1) {
+        //     da_clear(mesh.vertices);
+        //     da_clear(mesh.faces);
+        //     load_cube_data();
+        // } else if (event.key.keysym.sym == SDLK_2) {
+        //     da_clear(mesh.vertices);
+        //     da_clear(mesh.faces);
+        //     load_f22_data();
+        // }
         break;
     }
 }
@@ -208,28 +219,28 @@ void update(float x_rotation, float y_rotation, float z_rotation) {
            / \
           C---B  */
 
-        // vec3_t vector_a = vec3_from_vec4(transformed_vertices[0]);
-        // vec3_t vector_b = vec3_from_vec4(transformed_vertices[1]);
-        // vec3_t vector_c = vec3_from_vec4(transformed_vertices[2]);
+        if ((render_settings & BACKFACE_CULLING) == BACKFACE_CULLING) {
+            vec3_t vector_a = vec3_from_vec4(transformed_vertices[0]);
+            vec3_t vector_b = vec3_from_vec4(transformed_vertices[1]);
+            vec3_t vector_c = vec3_from_vec4(transformed_vertices[2]);
 
-        // vec3_t vector_ab = vec3_subtract(vector_b, vector_a);
-        // vec3_t vector_ac = vec3_subtract(vector_c, vector_a);
-        // vec3_normalise(&vector_ab);
-        // vec3_normalise(&vector_ac);
+            vec3_t vector_ab = vec3_subtract(vector_b, vector_a);
+            vec3_t vector_ac = vec3_subtract(vector_c, vector_a);
+            vec3_normalise(&vector_ab);
+            vec3_normalise(&vector_ac);
 
 
-        // vec3_t normal = vec3_cross_product(vector_ab, vector_ac);
-        // vec3_normalise(&normal);
+            vec3_t normal = vec3_cross_product(vector_ab, vector_ac);
+            vec3_normalise(&normal);
 
-        // vec3_t camera_ray = vec3_subtract(camera_position, vector_a);
-        // float dot_product_camera = vec3_dot_product(normal, camera_ray);
-
-        // if ((render_settings & BACKFACE_CULLING) == BACKFACE_CULLING) {
-        //     // Only project the vertices which need to otherwise move onto the next face.
-        //     if (dot_product_camera < 0) {
-        //         continue;
-        //     }
-        // }
+            vec3_t camera_ray = vec3_subtract(camera_position, vector_a);
+            float dot_product_camera = vec3_dot_product(normal, camera_ray);
+    
+            // Only project the vertices which need to otherwise move onto the next face.
+            if (dot_product_camera < 0) {
+                continue;
+            }
+        }
 
         vec4_t projected_points[3];
         for (int j=0; j < 3; j++) {
@@ -270,20 +281,26 @@ void update(float x_rotation, float y_rotation, float z_rotation) {
                 {projected_points[1].x, projected_points[1].y},
                 {projected_points[2].x, projected_points[2].y}
             },
+            . texcoords = {
+                {mesh_face.a_uv.u, mesh_face.a_uv.v},
+                {mesh_face.b_uv.u, mesh_face.b_uv.v},
+                {mesh_face.c_uv.u, mesh_face.c_uv.v}
+            },
             .colour = new_colour,
             .avg_depth = (transformed_vertices[0].z + transformed_vertices[1].z + transformed_vertices[2].z) / 3
         };
 
-        if ((render_settings & BACKFACE_CULLING) == BACKFACE_CULLING) {
-            vec2_t vertex_a = projected_triangle.points[0];
-            vec2_t vertex_b = projected_triangle.points[1];
-            vec2_t vertex_c = projected_triangle.points[2];
+        // if ((render_settings & BACKFACE_CULLING) == BACKFACE_CULLING) {
+        //     vec2_t vertex_a = projected_triangle.points[0];
+        //     vec2_t vertex_b = projected_triangle.points[1];
+        //     vec2_t vertex_c = projected_triangle.points[2];
 
-            float signed_2area = (vertex_a.x * vertex_b.y - vertex_b.x * vertex_a.y) + (vertex_b.x * vertex_c.y - vertex_c.x * vertex_b.y) + (vertex_c.x * vertex_a.y - vertex_a.x * vertex_c.y);
-            if (signed_2area < 0) {
-                da_append(&triangles_to_render, projected_triangle);
-            } else continue;
-        } else da_append(&triangles_to_render, projected_triangle);
+        //     // Negative signs are a fix to make signed area code work with projected points which have been inverted!
+        //     float signed_2area = (-vertex_a.x * -vertex_b.y - -vertex_b.x * -vertex_a.y) + (-vertex_b.x * -vertex_c.y - -vertex_c.x * -vertex_b.y) + (-vertex_c.x * -vertex_a.y - -vertex_a.x * -vertex_c.y);
+        //     if (signed_2area < 0) {
+        //         da_append(&triangles_to_render, projected_triangle);
+        //     } else continue;
+        // } else da_append(&triangles_to_render, projected_triangle);
         da_append(&triangles_to_render, projected_triangle);
     }
     mesh_triangle_quicksort(triangles_to_render.items, 0, triangles_to_render.count-1);
@@ -292,11 +309,12 @@ void update(float x_rotation, float y_rotation, float z_rotation) {
 void render() {
     for (size_t i=0; i < triangles_to_render.count; i++) {
         triangle_t triangle = triangles_to_render.items[i];
-        if ((render_settings & (FILLED_TRIANGLES | WIREFRAME)) == (FILLED_TRIANGLES | WIREFRAME)) {
+        if ((render_settings & FILLED_TRIANGLES) == FILLED_TRIANGLES) {
             draw_filled_triangle(triangle, triangle.colour);
             draw_triangle(triangle, WHITE);
-        }
-        else if ((render_settings & FILLED_TRIANGLES) == FILLED_TRIANGLES) {
+        } else if ((render_settings & TEXTURED) == TEXTURED) {
+            draw_textured_triangle(triangle, mesh_texture);
+        } else if ((render_settings & FILLED_TRIANGLES) == FILLED_TRIANGLES) {
             draw_filled_triangle(triangle, triangle.colour);
         } else if ((render_settings & WIREFRAME) == WIREFRAME) {
             draw_triangle(triangle, WHITE);
@@ -329,12 +347,14 @@ void free_resources() {
 int main(int argc, char *argv[]) {
     is_running = initialise_window();
 
-    if (argc > 1) {
-        printf("\n%s\n", argv[1]);
-        if (strcmp(argv[1], "Cube") == 0) load_cube_data();
-        else if (strcmp(argv[1], "F22") == 0) load_f22_data();
-        else printf("Not a valid obj to load!");
-    } else load_cube_data();
+    // if (argc > 1) {
+    //     printf("\n%s\n", argv[1]);
+    //     if (strcmp(argv[1], "Cube") == 0) load_cube_data();
+    //     else if (strcmp(argv[1], "F22") == 0) load_f22_data();
+    //     else printf("Not a valid obj to load!");
+    // } else load_cube_data();
+
+    test_cube_data();
 
     setup();
 

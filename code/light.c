@@ -16,3 +16,8 @@ uint32_t light_apply_intensity(uint32_t original_colour, float percentage_factor
     uint32_t new_colour = a | (r & 0x00FF0000) | (g & 0x0000FF00) | (b & 0x000000FF);
     return new_colour;
 };
+
+
+// float diffuse_reflection() {
+
+// }

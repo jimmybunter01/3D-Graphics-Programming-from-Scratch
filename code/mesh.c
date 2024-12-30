@@ -13,6 +13,50 @@ mesh_t mesh = {
   .translation = {0,0,0}
 };
 
+vec3_t cube_vertices[8] = {
+    { .x = -1, .y = -1, .z = -1 }, // 1
+    { .x = -1, .y =  1, .z = -1 }, // 2
+    { .x =  1, .y =  1, .z = -1 }, // 3
+    { .x =  1, .y = -1, .z = -1 }, // 4
+    { .x =  1, .y =  1, .z =  1 }, // 5
+    { .x =  1, .y = -1, .z =  1 }, // 6
+    { .x = -1, .y =  1, .z =  1 }, // 7
+    { .x = -1, .y = -1, .z =  1 }  // 8
+};
+
+face_t cube_faces[12] = {
+    // front
+    { .a = 1, .b = 2, .c = 3, .a_uv = { 0, 0 }, .b_uv = { 0, 1 }, .c_uv = { 1, 1 }},
+    { .a = 1, .b = 3, .c = 4, .a_uv = { 0, 0 }, .b_uv = { 1, 1 }, .c_uv = { 1, 0 }},
+    // right
+    { .a = 4, .b = 3, .c = 5, .a_uv = { 0, 0 }, .b_uv = { 0, 1 }, .c_uv = { 1, 1 }},
+    { .a = 4, .b = 5, .c = 6, .a_uv = { 0, 0 }, .b_uv = { 1, 1 }, .c_uv = { 1, 0 }},
+    // back
+    { .a = 6, .b = 5, .c = 7, .a_uv = { 0, 0 }, .b_uv = { 0, 1 }, .c_uv = { 1, 1 }},
+    { .a = 6, .b = 7, .c = 8, .a_uv = { 0, 0 }, .b_uv = { 1, 1 }, .c_uv = { 1, 0 }},
+    // left
+    { .a = 8, .b = 7, .c = 2, .a_uv = { 0, 0 }, .b_uv = { 0, 1 }, .c_uv = { 1, 1 }},
+    { .a = 8, .b = 2, .c = 1, .a_uv = { 0, 0 }, .b_uv = { 1, 1 }, .c_uv = { 1, 0 }},
+    // top
+    { .a = 2, .b = 7, .c = 5, .a_uv = { 0, 0 }, .b_uv = { 0, 1 }, .c_uv = { 1, 1 }},
+    { .a = 2, .b = 5, .c = 3, .a_uv = { 0, 0 }, .b_uv = { 1, 1 }, .c_uv = { 1, 0 }},
+    // bottom
+    { .a = 6, .b = 8, .c = 1, .a_uv = { 0, 0 }, .b_uv = { 0, 1 }, .c_uv = { 1, 1 }},
+    { .a = 6, .b = 1, .c = 4, .a_uv = { 0, 0 }, .b_uv = { 1, 1 }, .c_uv = { 1, 0 }}
+};
+
+void manual_cube_load(uint32_t colour) {
+    for (int i=0; i < 8; i++) {
+        da_append(&mesh.vertices, cube_vertices[i]);
+    }
+
+    for (int i=0; i < 12; i++) {
+        face_t current_face = cube_faces[i];
+        current_face.colour = colour;
+        da_append(&mesh.faces, current_face);
+    }
+}
+
 // This is a rudimentery parsing of a .obj file.
 void load_obj_file_data(char *filename, uint32_t face_colours[], int no_of_colours) {
     FILE *stream;

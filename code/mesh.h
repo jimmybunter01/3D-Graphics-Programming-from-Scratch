@@ -19,7 +19,6 @@ typedef struct {
 } mesh_t;
 
 extern mesh_t mesh;
-
 void load_obj_file_data(char* filename, uint32_t face_colours[], int no_of_colours);
 
 #endif

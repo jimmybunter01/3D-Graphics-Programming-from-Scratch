@@ -20,7 +20,8 @@ enum render_settings {
     FILLED_TRIANGLES    = 1 << 1,
     WIREFRAME           = 1 << 2,
     VERTEX_DOTS         = 1 << 3,
-    BACKFACE_CULLING    = 1 << 4
+    BACKFACE_CULLING    = 1 << 4,
+    TEXTURED            = 1 << 5
 } render_settings;
 
 bool initialise_window(void);
