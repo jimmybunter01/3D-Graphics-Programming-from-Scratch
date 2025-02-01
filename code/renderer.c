@@ -53,7 +53,7 @@ void setup() {
     colour_buffer = (uint32_t*) malloc(sizeof(uint32_t) * window_width * window_height);
     assert(colour_buffer);
 
-    render_settings = BACKFACE_CULLING | TEXTURED;
+    render_settings = BACKFACE_CULLING | WIREFRAME;
 
     float fov = M_PI / 2; // FOV is given in Radians.
     float aspect = (float)window_height/ (float)window_width;
@@ -95,7 +95,8 @@ void process_input() {
         } else if (event.key.keysym.sym == SDLK_t) {
             render_settings ^= TEXTURED;
         }
-        // } else if (event.key.keysym.sym == SDLK_1) {
+
+        // else if (event.key.keysym.sym == SDLK_1) {
         //     da_clear(mesh.vertices);
         //     da_clear(mesh.faces);
         //     load_cube_data();
@@ -219,28 +220,28 @@ void update(float x_rotation, float y_rotation, float z_rotation) {
            / \
           C---B  */
 
-        if ((render_settings & BACKFACE_CULLING) == BACKFACE_CULLING) {
-            vec3_t vector_a = vec3_from_vec4(transformed_vertices[0]);
-            vec3_t vector_b = vec3_from_vec4(transformed_vertices[1]);
-            vec3_t vector_c = vec3_from_vec4(transformed_vertices[2]);
+        // if ((render_settings & BACKFACE_CULLING) == BACKFACE_CULLING) {
+        //     vec3_t vector_a = vec3_from_vec4(transformed_vertices[0]);
+        //     vec3_t vector_b = vec3_from_vec4(transformed_vertices[1]);
+        //     vec3_t vector_c = vec3_from_vec4(transformed_vertices[2]);
 
-            vec3_t vector_ab = vec3_subtract(vector_b, vector_a);
-            vec3_t vector_ac = vec3_subtract(vector_c, vector_a);
-            vec3_normalise(&vector_ab);
-            vec3_normalise(&vector_ac);
+        //     vec3_t vector_ab = vec3_subtract(vector_b, vector_a);
+        //     vec3_t vector_ac = vec3_subtract(vector_c, vector_a);
+        //     vec3_normalise(&vector_ab);
+        //     vec3_normalise(&vector_ac);
 
 
-            vec3_t normal = vec3_cross_product(vector_ab, vector_ac);
-            vec3_normalise(&normal);
+        //     vec3_t normal = vec3_cross_product(vector_ab, vector_ac);
+        //     vec3_normalise(&normal);
 
-            vec3_t camera_ray = vec3_subtract(camera_position, vector_a);
-            float dot_product_camera = vec3_dot_product(normal, camera_ray);
-    
-            // Only project the vertices which need to otherwise move onto the next face.
-            if (dot_product_camera < 0) {
-                continue;
-            }
-        }
+        //     vec3_t camera_ray = vec3_subtract(camera_position, vector_a);
+        //     float dot_product_camera = vec3_dot_product(normal, camera_ray);
+
+        //     // Only project the vertices which need to otherwise move onto the next face.
+        //     if (dot_product_camera < 0) {
+        //         continue;
+        //     }
+        // }
 
         vec4_t projected_points[3];
         for (int j=0; j < 3; j++) {
@@ -290,17 +291,17 @@ void update(float x_rotation, float y_rotation, float z_rotation) {
             .avg_depth = (transformed_vertices[0].z + transformed_vertices[1].z + transformed_vertices[2].z) / 3
         };
 
-        // if ((render_settings & BACKFACE_CULLING) == BACKFACE_CULLING) {
-        //     vec2_t vertex_a = projected_triangle.points[0];
-        //     vec2_t vertex_b = projected_triangle.points[1];
-        //     vec2_t vertex_c = projected_triangle.points[2];
+        if ((render_settings & BACKFACE_CULLING) == BACKFACE_CULLING) {
+            vec2_t vertex_a = projected_triangle.points[0];
+            vec2_t vertex_b = projected_triangle.points[1];
+            vec2_t vertex_c = projected_triangle.points[2];
 
-        //     // Negative signs are a fix to make signed area code work with projected points which have been inverted!
-        //     float signed_2area = (-vertex_a.x * -vertex_b.y - -vertex_b.x * -vertex_a.y) + (-vertex_b.x * -vertex_c.y - -vertex_c.x * -vertex_b.y) + (-vertex_c.x * -vertex_a.y - -vertex_a.x * -vertex_c.y);
-        //     if (signed_2area < 0) {
-        //         da_append(&triangles_to_render, projected_triangle);
-        //     } else continue;
-        // } else da_append(&triangles_to_render, projected_triangle);
+            // Negative signs are a fix to make signed area code work with projected points which have been inverted!
+            float signed_2area = (-vertex_a.x * -vertex_b.y - -vertex_b.x * -vertex_a.y) + (-vertex_b.x * -vertex_c.y - -vertex_c.x * -vertex_b.y) + (-vertex_c.x * -vertex_a.y - -vertex_a.x * -vertex_c.y);
+            if (signed_2area < 0) {
+                da_append(&triangles_to_render, projected_triangle);
+            } else continue;
+        } else da_append(&triangles_to_render, projected_triangle);
         da_append(&triangles_to_render, projected_triangle);
     }
     mesh_triangle_quicksort(triangles_to_render.items, 0, triangles_to_render.count-1);
@@ -309,14 +310,17 @@ void update(float x_rotation, float y_rotation, float z_rotation) {
 void render() {
     for (size_t i=0; i < triangles_to_render.count; i++) {
         triangle_t triangle = triangles_to_render.items[i];
+
+        // Seperate if statements for all of these mean we can just turn the flags true/false (on/off) without having to think about various combinations!
         if ((render_settings & FILLED_TRIANGLES) == FILLED_TRIANGLES) {
             draw_filled_triangle(triangle, triangle.colour);
-            draw_triangle(triangle, WHITE);
-        } else if ((render_settings & TEXTURED) == TEXTURED) {
+        }
+
+        if ((render_settings & TEXTURED) == TEXTURED) {
             draw_textured_triangle(triangle, mesh_texture);
-        } else if ((render_settings & FILLED_TRIANGLES) == FILLED_TRIANGLES) {
-            draw_filled_triangle(triangle, triangle.colour);
-        } else if ((render_settings & WIREFRAME) == WIREFRAME) {
+        }
+
+        if ((render_settings & WIREFRAME) == WIREFRAME) {
             draw_triangle(triangle, WHITE);
         }
 
@@ -327,8 +331,6 @@ void render() {
             draw_rectangle(triangle.points[1].x - 5, triangle.points[1].y - 5, 10, 10, RED);
             draw_rectangle(triangle.points[2].x - 5, triangle.points[2].y - 5, 10, 10, RED);
             draw_rectangle(triangle.points[2].x - 5, triangle.points[2].y - 5, 10, 10, RED);
-        } else {
-            continue;
         }
     }
 
