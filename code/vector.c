@@ -48,6 +48,12 @@ void vec2_normalise(vec2_t *vector) {
     vector->y /= length;
 }
 
+vec2_t vec2_from_vec4(vec4_t v) {
+    vec2_t result = {v.x, v.y};
+    return result;
+}
+
+
 float vec3_length(vec3_t vector) {
     return sqrt(vector.x * vector.x + vector.y * vector.y + vector.z * vector.z);
 }

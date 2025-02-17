@@ -21,6 +21,7 @@ vec2_t vec2_multiply(vec2_t vector, float scalar);
 vec2_t vec2_divide(vec2_t vector, float scalar);
 float vec2_dot_product(vec2_t a, vec2_t b);
 void vec2_normalise(vec2_t *vector);
+vec2_t vec2_from_vec4(vec4_t v);
 
 // 3D Vector Functions
 float vec3_length(vec3_t vector);

@@ -19,7 +19,7 @@ typedef struct {
 } face_t;
 
 typedef struct {
-	vec2_t points[3];
+	vec4_t points[3];
 	tex2_t texcoords[3]; // Needed for mapping textures correctly.
 	uint32_t colour;
 	float avg_depth;
@@ -29,8 +29,8 @@ void draw_filled_triangle(triangle_t triangle, uint32_t colour);
 void draw_textured_triangle(triangle_t triangle, uint32_t* texture);
 void draw_texture(
     int x, int y
-    , vec2_t point_a, vec2_t point_b, vec2_t point_c
-    , float u0, float v0, float u1, float v1, float u2,  float v2
+    , vec4_t point_a, vec4_t point_b, vec4_t point_c
+    , tex2_t a_uv, tex2_t b_uv, tex2_t c_uv
     , uint32_t* texture
 );
 #endif

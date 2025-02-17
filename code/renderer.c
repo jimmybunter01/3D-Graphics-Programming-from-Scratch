@@ -10,6 +10,7 @@
 #include "matrix.h"
 #include "light.h"
 #include "texture.h"
+#include "upng.h"
 #include <stdbool.h>
 #include <assert.h>
 #include <stdio.h>
@@ -55,12 +56,12 @@ void setup() {
 
     render_settings = BACKFACE_CULLING | WIREFRAME;
 
-    float fov = M_PI / 2; // FOV is given in Radians.
+    float fov = M_PI / 1.75; // FOV is given in Radians.
     float aspect = (float)window_height/ (float)window_width;
     float znear = 0.1; // Arbitraary Value
     float zfar = 100.0; // Arbitraary Value
     perspective_projection_matrix = mat4_make_perspective(fov, aspect, zfar, znear);
-    mesh_texture = (uint32_t*)REDBRICK_TEXTURE;
+    // mesh_texture = (uint32_t*)REDBRICK_TEXTURE;
 
     // SDL Texture is used to display the colour buffer.
     colour_buffer_texture = SDL_CreateTexture(
@@ -162,8 +163,8 @@ void update(float x_rotation, float y_rotation, float z_rotation) {
         SDL_Delay(time_to_wait);
     }
 
-    mesh.rotation.x += 0.001;
-    // mesh.rotation.y += 0.01;
+    // mesh.rotation.x += 0.001;
+    mesh.rotation.y += 0.01;
     // mesh.rotation.z += 0.01;
     // mesh.scale.x += 0.002;
     // mesh.scale.y += 0.001;
@@ -278,9 +279,9 @@ void update(float x_rotation, float y_rotation, float z_rotation) {
 
         triangle_t projected_triangle = {
             .points = {
-                {projected_points[0].x, projected_points[0].y},
-                {projected_points[1].x, projected_points[1].y},
-                {projected_points[2].x, projected_points[2].y}
+                {projected_points[0].x, projected_points[0].y, projected_points[0].z, projected_points[0].w},
+                {projected_points[1].x, projected_points[1].y, projected_points[1].z, projected_points[1].w},
+                {projected_points[2].x, projected_points[2].y, projected_points[2].z, projected_points[2].w}
             },
             . texcoords = {
                 {mesh_face.a_uv.u, mesh_face.a_uv.v},
@@ -292,9 +293,9 @@ void update(float x_rotation, float y_rotation, float z_rotation) {
         };
 
         if ((render_settings & BACKFACE_CULLING) == BACKFACE_CULLING) {
-            vec2_t vertex_a = projected_triangle.points[0];
-            vec2_t vertex_b = projected_triangle.points[1];
-            vec2_t vertex_c = projected_triangle.points[2];
+            vec2_t vertex_a = vec2_from_vec4(projected_triangle.points[0]);
+            vec2_t vertex_b = vec2_from_vec4(projected_triangle.points[1]);
+            vec2_t vertex_c = vec2_from_vec4(projected_triangle.points[2]);
 
             // Negative signs are a fix to make signed area code work with projected points which have been inverted!
             float signed_2area = (-vertex_a.x * -vertex_b.y - -vertex_b.x * -vertex_a.y) + (-vertex_b.x * -vertex_c.y - -vertex_c.x * -vertex_b.y) + (-vertex_c.x * -vertex_a.y - -vertex_a.x * -vertex_c.y);
