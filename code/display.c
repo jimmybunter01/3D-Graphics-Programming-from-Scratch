@@ -140,7 +140,7 @@ void render_colour_buffer(void) {
         , colour_buffer
         , (int)(window_width * sizeof(uint32_t))
     );
-    SDL_RenderCopy(renderer, colour_buffer_texture, NULL, NULL);
+    SDL_RenderCopyEx(renderer, colour_buffer_texture, NULL, NULL, 0, NULL, SDL_FLIP_VERTICAL);
 }
 
 void clear_colour_buffer(uint32_t colour) {

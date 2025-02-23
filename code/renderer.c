@@ -10,7 +10,6 @@
 #include "matrix.h"
 #include "light.h"
 #include "texture.h"
-#include "upng.h"
 #include <stdbool.h>
 #include <assert.h>
 #include <stdio.h>
@@ -61,12 +60,12 @@ void setup() {
     float znear = 0.1; // Arbitraary Value
     float zfar = 100.0; // Arbitraary Value
     perspective_projection_matrix = mat4_make_perspective(fov, aspect, zfar, znear);
-    // mesh_texture = (uint32_t*)REDBRICK_TEXTURE;
+    load_png_texture_data("../assets/cube.png");
 
     // SDL Texture is used to display the colour buffer.
     colour_buffer_texture = SDL_CreateTexture(
         renderer,
-        SDL_PIXELFORMAT_ARGB8888,
+        SDL_PIXELFORMAT_RGBA32,
         SDL_TEXTUREACCESS_STREAMING,
         window_width,
         window_height
@@ -254,8 +253,7 @@ void update(float x_rotation, float y_rotation, float z_rotation) {
             projected_points[j].y *= (window_height>>1);
 
             // Invert the y values to account for flipped screen y coordinates
-            projected_points[j].x *= -1;
-            projected_points[j].y *= -1;
+            // projected_points[j].y *= -1;
 
             // Translate the points to the middle.
             projected_points[j].x += (window_width>>1);
@@ -298,7 +296,7 @@ void update(float x_rotation, float y_rotation, float z_rotation) {
             vec2_t vertex_c = vec2_from_vec4(projected_triangle.points[2]);
 
             // Negative signs are a fix to make signed area code work with projected points which have been inverted!
-            float signed_2area = (-vertex_a.x * -vertex_b.y - -vertex_b.x * -vertex_a.y) + (-vertex_b.x * -vertex_c.y - -vertex_c.x * -vertex_b.y) + (-vertex_c.x * -vertex_a.y - -vertex_a.x * -vertex_c.y);
+            float signed_2area = (vertex_a.x * vertex_b.y - vertex_b.x * vertex_a.y) + (vertex_b.x * vertex_c.y - vertex_c.x * vertex_b.y) + (vertex_c.x * vertex_a.y - vertex_a.x * vertex_c.y);
             if (signed_2area < 0) {
                 da_append(&triangles_to_render, projected_triangle);
             } else continue;
