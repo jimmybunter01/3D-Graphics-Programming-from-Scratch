@@ -131,10 +131,17 @@ void draw_texture(
     interpolated_u /= interpolated_reciprocal_w;
     interpolated_v /= interpolated_reciprocal_w;
 
-    int texture_x = abs((int)(interpolated_u * texture_width));
-    int texture_y = abs((int)(interpolated_v * texture_height));
+    // Modulus ensures that the values are never < 0, so outside the the triangle the texture is drawn to.
+    int texture_x = abs((int)(interpolated_u * texture_width)) % texture_width;
+    int texture_y = abs((int)(interpolated_v * texture_height)) % texture_height;
 
-    draw_pixel(x,y, texture[(texture_width * texture_y) + texture_x]);
+    // 1/w needs to adjusted so that the vlaues which are closer to the camera have smaller values.
+    interpolated_reciprocal_w = 1.0 - interpolated_reciprocal_w;
+
+    if (interpolated_reciprocal_w < z_buffer[(window_width * y) + x]) {
+        draw_pixel(x,y, texture[(texture_width * texture_y) + texture_x]);
+        z_buffer[(window_width * y) + x] = interpolated_reciprocal_w;
+    }
 }
 
 void draw_textured_triangle(triangle_t triangle, uint32_t* texture) {
@@ -182,6 +189,11 @@ void draw_textured_triangle(triangle_t triangle, uint32_t* texture) {
         float_swap(&u0, &u1);
         float_swap(&v0, &v1);
     }
+
+    // Flip the V component to account for the inverted UV-coordinates (V grows downwards).
+    v0 = 1 - v0;
+    v1 = 1 - v1;
+    v2 = 1 - v2;
 
     vec4_t point_a = {x0, y0, z0, w0};
     vec4_t point_b = {x1, y1, z1, w1};

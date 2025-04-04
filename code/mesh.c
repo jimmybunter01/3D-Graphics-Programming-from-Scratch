@@ -68,12 +68,22 @@ void load_obj_file_data(char *filename, uint32_t face_colours[], int no_of_colou
 
     printf("\nAbout to load obj file data!\n");
     if(fopen_s(&stream, filename, "r") == 0) {
+
+        da_array(tex2_da_array, tex2_t)
+        tex2_da_array tex_coords = {};
+
         while (fgets(line, 100, stream) != NULL) {
             //Parse Vectors
             if (strncmp(line, "v ", 2) == 0) {
                 vec3_t current_vertex;
                 sscanf(line, "v %f %f %f", &current_vertex.x, &current_vertex.y, &current_vertex.z);
                 da_append(&mesh.vertices, current_vertex);
+            }
+
+            if (strncmp(line, "vt ", 3) == 0) {
+                tex2_t tex_coord;
+                sscanf(line, "vt %f %f", &tex_coord.u, &tex_coord.v);
+                da_append(&tex_coords, tex_coord);
             }
 
             // Parse Faces
@@ -91,15 +101,26 @@ void load_obj_file_data(char *filename, uint32_t face_colours[], int no_of_colou
 
                 face_t current_face = {};
                 if (no_of_colours > 1) {
-                    current_face.a = vertex_indices[0];
-                    current_face.b = vertex_indices[1];
-                    current_face.c = vertex_indices[2];
+                    current_face.a = vertex_indices[0] - 1;
+                    current_face.b = vertex_indices[1] - 1;
+                    current_face.c = vertex_indices[2] - 1;
+
+                    // In .obj file the indicies are NOT 0 based!
+                    current_face.a_uv = tex_coords.items[texture_indices[0] - 1];
+                    current_face.b_uv = tex_coords.items[texture_indices[1] - 1];
+                    current_face.c_uv = tex_coords.items[texture_indices[2] - 1];
                     current_face.colour = face_colours[colour_index];
                 }
                 else {
-                    current_face.a = vertex_indices[0];
-                    current_face.b = vertex_indices[1];
-                    current_face.c = vertex_indices[2];
+                    current_face.a = vertex_indices[0] - 1;
+                    current_face.b = vertex_indices[1] - 1;
+                    current_face.c = vertex_indices[2] - 1;
+
+                    // In .obj file the indicies are NOT 0 based!
+                    current_face.a_uv = tex_coords.items[texture_indices[0] - 1];
+                    current_face.b_uv = tex_coords.items[texture_indices[1] - 1];
+                    current_face.c_uv = tex_coords.items[texture_indices[2] - 1];
+                    
                     current_face.colour = face_colours[0];
                 }
                 da_append(&mesh.faces, current_face);
@@ -108,7 +129,9 @@ void load_obj_file_data(char *filename, uint32_t face_colours[], int no_of_colou
             if (strncmp(line, "s ", 2) == 0) {
                 colour_index++;
             }
+
         }
+    da_clear(tex_coords);
     }
     fclose(stream);
 }

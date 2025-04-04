@@ -25,33 +25,80 @@ da_array(mesh_triangles, triangle_t)
 mesh_triangles triangles_to_render = {};
 mat4_t perspective_projection_matrix;
 
-void test_cube_data() {
-    x_rotation = y_rotation = z_rotation = 0.001;
-    mesh.scale.x = mesh.scale.y = mesh.scale.z = 1;
-    manual_cube_load(WHITE);
-}
+// void test_cube_data() {
+//     x_rotation = y_rotation = z_rotation = 0.001;
+//     mesh.scale.x = mesh.scale.y = mesh.scale.z = 1;
+//     manual_cube_load(WHITE);
+// }
 
 void load_cube_data() {
-    // uint32_t face_colours[] = {YELLOW, GREEN, BLUE, RED, GREY, WHITE};
-    uint32_t face_colours[] = {WHITE};
+    uint32_t face_colours[] = {YELLOW, GREEN, BLUE, RED, GREY, WHITE};
+    // uint32_t face_colours[] = {WHITE};
     int no_of_colours = sizeof(face_colours) / sizeof(face_colours[0]);
     x_rotation = y_rotation = z_rotation = 0.001;
     mesh.scale.x = mesh.scale.y = mesh.scale.z = 1;
     load_obj_file_data("../assets/cube.obj", face_colours, no_of_colours);
+    load_png_texture_data("../assets/cube.png");
 }
 
 void load_f22_data() {
     uint32_t face_colours[1] = {WHITE};
-    y_rotation = z_rotation = 0;
+    y_rotation = z_rotation = 0.01;
     mesh.rotation.x = mesh.rotation.y = mesh.rotation.z = 0;
     mesh.scale.x = mesh.scale.y = mesh.scale.z = 1;
     load_obj_file_data("../assets/f22.obj", face_colours, 1);
+    load_png_texture_data("../assets/f22.png");
+}
+
+void load_f117_data() {
+    uint32_t face_colours[1] = {WHITE};
+    y_rotation = z_rotation = 0.01;
+    mesh.rotation.x = mesh.rotation.y = mesh.rotation.z = 0;
+    mesh.scale.x = mesh.scale.y = mesh.scale.z = 1;
+    load_obj_file_data("../assets/f117.obj", face_colours, 1);
+    load_png_texture_data("../assets/f117.png");
+}
+
+void load_efa_data() {
+    uint32_t face_colours[1] = {WHITE};
+    y_rotation = z_rotation = 0.01;
+    mesh.rotation.x = mesh.rotation.y = mesh.rotation.z = 0;
+    mesh.scale.x = mesh.scale.y = mesh.scale.z = 1;
+    load_obj_file_data("../assets/efa.obj", face_colours, 1);
+    load_png_texture_data("../assets/efa.png");
+}
+
+void load_drone_data() {
+    uint32_t face_colours[1] = {WHITE};
+    y_rotation = z_rotation = 0.01;
+    mesh.rotation.x = mesh.rotation.y = mesh.rotation.z = 0;
+    mesh.scale.x = mesh.scale.y = mesh.scale.z = 1;
+    load_obj_file_data("../assets/drone.obj", face_colours, 1);
+    load_png_texture_data("../assets/drone.png");
+}
+
+void load_crab_data() {
+    uint32_t face_colours[1] = {WHITE};
+    y_rotation = z_rotation = 0.01;
+    mesh.rotation.x = mesh.rotation.y = mesh.rotation.z = 0;
+    mesh.scale.x = mesh.scale.y = mesh.scale.z = 1;
+    load_obj_file_data("../assets/crab.obj", face_colours, 1);
+    load_png_texture_data("../assets/crab.png");
+}
+
+void load_sphere_data() {
+    uint32_t face_colours[1] = {WHITE};
+    y_rotation = z_rotation = 0.01;
+    mesh.rotation.x = mesh.rotation.y = mesh.rotation.z = 0;
+    mesh.scale.x = mesh.scale.y = mesh.scale.z = 1;
+    load_obj_file_data("../assets/sphere.obj", face_colours, 1);
+    load_png_texture_data("../assets/pikuma.png");
 }
 
 void setup() {
     // Colour Buffer is a 1D representation od a 2D array.
     colour_buffer = (uint32_t*) malloc(sizeof(uint32_t) * window_width * window_height);
-    assert(colour_buffer);
+    z_buffer = (float*) malloc(sizeof(float) * window_width * window_height);
 
     render_settings = BACKFACE_CULLING | WIREFRAME;
 
@@ -60,7 +107,7 @@ void setup() {
     float znear = 0.1; // Arbitraary Value
     float zfar = 100.0; // Arbitraary Value
     perspective_projection_matrix = mat4_make_perspective(fov, aspect, zfar, znear);
-    load_png_texture_data("../assets/cube.png");
+
 
     // SDL Texture is used to display the colour buffer.
     colour_buffer_texture = SDL_CreateTexture(
@@ -94,17 +141,35 @@ void process_input() {
             render_settings ^= BACKFACE_CULLING;
         } else if (event.key.keysym.sym == SDLK_t) {
             render_settings ^= TEXTURED;
+        } else if (event.key.keysym.sym == SDLK_1) {
+            da_clear(mesh.vertices);
+            da_clear(mesh.faces);
+            load_cube_data();
+        } else if (event.key.keysym.sym == SDLK_2) {
+            da_clear(mesh.vertices);
+            da_clear(mesh.faces);
+            load_f22_data();
+        } else if (event.key.keysym.sym == SDLK_3) {
+            da_clear(mesh.vertices);
+            da_clear(mesh.faces);
+            load_f117_data();
+        } else if (event.key.keysym.sym == SDLK_4) {
+            da_clear(mesh.vertices);
+            da_clear(mesh.faces);
+            load_efa_data();
+        } else if (event.key.keysym.sym == SDLK_5) {
+            da_clear(mesh.vertices);
+            da_clear(mesh.faces);
+            load_drone_data();
+        } else if (event.key.keysym.sym == SDLK_6) {
+            da_clear(mesh.vertices);
+            da_clear(mesh.faces);
+            load_crab_data();
+        } else if (event.key.keysym.sym == SDLK_7) {
+            da_clear(mesh.vertices);
+            da_clear(mesh.faces);
+            load_sphere_data();
         }
-
-        // else if (event.key.keysym.sym == SDLK_1) {
-        //     da_clear(mesh.vertices);
-        //     da_clear(mesh.faces);
-        //     load_cube_data();
-        // } else if (event.key.keysym.sym == SDLK_2) {
-        //     da_clear(mesh.vertices);
-        //     da_clear(mesh.faces);
-        //     load_f22_data();
-        // }
         break;
     }
 }
@@ -162,9 +227,9 @@ void update(float x_rotation, float y_rotation, float z_rotation) {
         SDL_Delay(time_to_wait);
     }
 
-    // mesh.rotation.x += 0.001;
-    mesh.rotation.y += 0.01;
-    // mesh.rotation.z += 0.01;
+    mesh.rotation.x += 0.01;
+    mesh.rotation.y += 0;
+    mesh.rotation.z += 0;
     // mesh.scale.x += 0.002;
     // mesh.scale.y += 0.001;
     // mesh.translation.x += 0.01;
@@ -188,9 +253,9 @@ void update(float x_rotation, float y_rotation, float z_rotation) {
         face_t mesh_face = mesh.faces.items[i];
 
         vec3_t face_vertices[3];
-        face_vertices[0] = mesh.vertices.items[mesh_face.a - 1];
-        face_vertices[1] = mesh.vertices.items[mesh_face.b - 1];
-        face_vertices[2] = mesh.vertices.items[mesh_face.c - 1];
+        face_vertices[0] = mesh.vertices.items[mesh_face.a];
+        face_vertices[1] = mesh.vertices.items[mesh_face.b];
+        face_vertices[2] = mesh.vertices.items[mesh_face.c];
 
         vec4_t transformed_vertices[3];
 
@@ -336,6 +401,7 @@ void render() {
     da_clear(triangles_to_render);
     render_colour_buffer();
     clear_colour_buffer(BLACK);
+    clear_z_buffer();
     SDL_RenderPresent(renderer);
 }
 
@@ -343,19 +409,20 @@ void free_resources() {
   free(colour_buffer);
   da_free(&mesh.vertices);
   da_free(&mesh.faces);
+  free_textures();
 }
 
 int main(int argc, char *argv[]) {
     is_running = initialise_window();
 
-    // if (argc > 1) {
-    //     printf("\n%s\n", argv[1]);
-    //     if (strcmp(argv[1], "Cube") == 0) load_cube_data();
-    //     else if (strcmp(argv[1], "F22") == 0) load_f22_data();
-    //     else printf("Not a valid obj to load!");
-    // } else load_cube_data();
+    if (argc > 1) {
+        printf("\n%s\n", argv[1]);
+        if (strcmp(argv[1], "Cube") == 0) load_cube_data();
+        else if (strcmp(argv[1], "F22") == 0) load_f22_data();
+        else printf("Not a valid obj to load!");
+    } else load_f22_data();
 
-    test_cube_data();
+    // test_cube_data();
 
     setup();
 

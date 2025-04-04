@@ -4,10 +4,10 @@
 int texture_width;
 int texture_height;
 uint32_t* mesh_texture = NULL;
+upng_t* png_texture = NULL;
 
 void load_png_texture_data(char* filename) {
-  upng_t* png_texture = upng_new_from_file(filename);
-
+    png_texture = upng_new_from_file(filename);
   if (png_texture != NULL) {
     upng_decode(png_texture);
     if (upng_get_error(png_texture) == UPNG_EOK) {
@@ -15,6 +15,9 @@ void load_png_texture_data(char* filename) {
         texture_height = upng_get_height(png_texture);
         mesh_texture = (uint32_t *)upng_get_buffer(png_texture);
     }
-    upng_free(png_texture);
   }
+}
+
+void free_textures() {
+    upng_free(png_texture);
 }
