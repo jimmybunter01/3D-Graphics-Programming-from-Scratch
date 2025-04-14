@@ -25,12 +25,6 @@ da_array(mesh_triangles, triangle_t)
 mesh_triangles triangles_to_render = {};
 mat4_t perspective_projection_matrix;
 
-// void test_cube_data() {
-//     x_rotation = y_rotation = z_rotation = 0.001;
-//     mesh.scale.x = mesh.scale.y = mesh.scale.z = 1;
-//     manual_cube_load(WHITE);
-// }
-
 void load_cube_data() {
     uint32_t face_colours[] = {YELLOW, GREEN, BLUE, RED, GREY, WHITE};
     // uint32_t face_colours[] = {WHITE};
@@ -100,7 +94,7 @@ void setup() {
     colour_buffer = (uint32_t*) malloc(sizeof(uint32_t) * window_width * window_height);
     z_buffer = (float*) malloc(sizeof(float) * window_width * window_height);
 
-    render_settings = BACKFACE_CULLING | WIREFRAME;
+    render_settings = BACKFACE_CULLING | TEXTURED;
 
     float fov = M_PI / 1.75; // FOV is given in Radians.
     float aspect = (float)window_height/ (float)window_width;
@@ -183,39 +177,40 @@ void process_input() {
 //     return projected_point;
 // }
 
-int mesh_triangle_quicksort_partition(triangle_t *triangles, int start, int end) {
-    float pivot = triangles[end].avg_depth;
-    int i = start;
-    for (int j=start; j < end; j++) {
-        if (triangles[j].avg_depth >= pivot) {
-            triangle_swap(&triangles[i], &triangles[j]);
-            i++;
-        }
-    }
-    triangle_swap(&triangles[i], &triangles[end]);
-    return i;
-}
+// Sorting for painters algorithm - not needed with a Z-Buffer.
+// int mesh_triangle_quicksort_partition(triangle_t *triangles, int start, int end) {
+//     float pivot = triangles[end].avg_depth;
+//     int i = start;
+//     for (int j=start; j < end; j++) {
+//         if (triangles[j].avg_depth >= pivot) {
+//             triangle_swap(&triangles[i], &triangles[j]);
+//             i++;
+//         }
+//     }
+//     triangle_swap(&triangles[i], &triangles[end]);
+//     return i;
+// }
 
-void mesh_triangle_quicksort(triangle_t *triangles_to_sort, int start, int end) {
-    /*
-    Lomuto Partition Scheme https://www.wikiwand.com/en/articles/Quicksort#Lomuto_partition_scheme
+// void mesh_triangle_quicksort(triangle_t *triangles_to_sort, int start, int end) {
+//     /*
+//     Lomuto Partition Scheme https://www.wikiwand.com/en/articles/Quicksort#Lomuto_partition_scheme
 
-    ---Steps:---
-    1. If count < 2 do nothing.
-    2. Pick a pivot point.
-    3. Split the array based on this pivot point.
-        i. All the value less than this must be before the pivot.
-        ii. Apply recursively.
-    */
+//     ---Steps:---
+//     1. If count < 2 do nothing.
+//     2. Pick a pivot point.
+//     3. Split the array based on this pivot point.
+//         i. All the value less than this must be before the pivot.
+//         ii. Apply recursively.
+//     */
 
-    if ((start >= end) || (start < 0)) {
-        return;
-    } else {
-        int pivot_index = mesh_triangle_quicksort_partition(triangles_to_sort, start, end);
-        mesh_triangle_quicksort(triangles_to_sort, start, (pivot_index - 1));
-        mesh_triangle_quicksort(triangles_to_sort, pivot_index + 1, end);
-    }
-}
+//     if ((start >= end) || (start < 0)) {
+//         return;
+//     } else {
+//         int pivot_index = mesh_triangle_quicksort_partition(triangles_to_sort, start, end);
+//         mesh_triangle_quicksort(triangles_to_sort, start, (pivot_index - 1));
+//         mesh_triangle_quicksort(triangles_to_sort, pivot_index + 1, end);
+//     }
+// }
 
 void update(float x_rotation, float y_rotation, float z_rotation) {
     // Proper way of makeing the execution wait until the appropriate amount of time has passed.
@@ -368,7 +363,7 @@ void update(float x_rotation, float y_rotation, float z_rotation) {
         } else da_append(&triangles_to_render, projected_triangle);
         da_append(&triangles_to_render, projected_triangle);
     }
-    mesh_triangle_quicksort(triangles_to_render.items, 0, triangles_to_render.count-1);
+    // mesh_triangle_quicksort(triangles_to_render.items, 0, triangles_to_render.count-1);
 }
 
 void render() {
@@ -418,11 +413,9 @@ int main(int argc, char *argv[]) {
     if (argc > 1) {
         printf("\n%s\n", argv[1]);
         if (strcmp(argv[1], "Cube") == 0) load_cube_data();
-        else if (strcmp(argv[1], "F22") == 0) load_f22_data();
+        else if (strcmp(argv[1], "F22") == 0) load_f117_data();
         else printf("Not a valid obj to load!");
-    } else load_f22_data();
-
-    // test_cube_data();
+    } else load_f117_data();
 
     setup();
 
