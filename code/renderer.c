@@ -21,8 +21,12 @@ int previous_frame_time = 0;
 float x_rotation;
 float y_rotation;
 float z_rotation;
-da_array(mesh_triangles, triangle_t)
-mesh_triangles triangles_to_render = {};
+
+// da_array(mesh_triangles, triangle_t)
+int max_triangles_per_mesh = 10000;
+triangle_t triangles_to_render[10000];
+int num_of_triangles_to_render = 0;
+
 mat4_t perspective_projection_matrix;
 
 void load_cube_data() {
@@ -123,7 +127,7 @@ void process_input() {
         is_running = false;
         break;
       case SDL_KEYDOWN:
-        if (event.key.keysym.sym == SDLK_ESCAPE) {
+        if (((event.key.keysym.sym == SDLK_LALT) || (event.key.keysym.sym == SDLK_RALT)) && (event.key.keysym.sym == SDLK_F4)) {
             is_running = false;
         } else if (event.key.keysym.sym == SDLK_w) {
             render_settings ^= WIREFRAME;
@@ -221,6 +225,9 @@ void update(float x_rotation, float y_rotation, float z_rotation) {
     if (time_to_wait > 0 && time_to_wait <= FRAME_TARGET_TIME) {
         SDL_Delay(time_to_wait);
     }
+
+    num_of_triangles_to_render = 0;
+    bool render = false;
 
     mesh.rotation.x += 0.01;
     mesh.rotation.y += 0;
@@ -347,8 +354,10 @@ void update(float x_rotation, float y_rotation, float z_rotation) {
                 {mesh_face.c_uv.u, mesh_face.c_uv.v}
             },
             .colour = new_colour,
-            .avg_depth = (transformed_vertices[0].z + transformed_vertices[1].z + transformed_vertices[2].z) / 3
+            // .avg_depth = (transformed_vertices[0].z + transformed_vertices[1].z + transformed_vertices[2].z) / 3
         };
+
+
 
         if ((render_settings & BACKFACE_CULLING) == BACKFACE_CULLING) {
             vec2_t vertex_a = vec2_from_vec4(projected_triangle.points[0]);
@@ -358,17 +367,20 @@ void update(float x_rotation, float y_rotation, float z_rotation) {
             // Negative signs are a fix to make signed area code work with projected points which have been inverted!
             float signed_2area = (vertex_a.x * vertex_b.y - vertex_b.x * vertex_a.y) + (vertex_b.x * vertex_c.y - vertex_c.x * vertex_b.y) + (vertex_c.x * vertex_a.y - vertex_a.x * vertex_c.y);
             if (signed_2area < 0) {
-                da_append(&triangles_to_render, projected_triangle);
+                render = true;
             } else continue;
-        } else da_append(&triangles_to_render, projected_triangle);
-        da_append(&triangles_to_render, projected_triangle);
+        } else render = true;
+
+        if (render) {
+            triangles_to_render[num_of_triangles_to_render++] = projected_triangle;
+        }
     }
     // mesh_triangle_quicksort(triangles_to_render.items, 0, triangles_to_render.count-1);
 }
 
 void render() {
-    for (size_t i=0; i < triangles_to_render.count; i++) {
-        triangle_t triangle = triangles_to_render.items[i];
+    for (size_t i=0; i < num_of_triangles_to_render; i++) {
+        triangle_t triangle = triangles_to_render[i];
 
         // Seperate if statements for all of these mean we can just turn the flags true/false (on/off) without having to think about various combinations!
         if ((render_settings & FILLED_TRIANGLES) == FILLED_TRIANGLES) {
@@ -393,7 +405,6 @@ void render() {
         }
     }
 
-    da_clear(triangles_to_render);
     render_colour_buffer();
     clear_colour_buffer(BLACK);
     clear_z_buffer();
